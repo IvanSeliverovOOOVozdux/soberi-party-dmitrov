@@ -1,0 +1,110 @@
+[
+  {
+    "file": "brand/letters/01-S.png",
+    "name": "S",
+    "row": 0,
+    "leftPct": 13.671875,
+    "topPct": 21.484375,
+    "widthPct": 15.13671875,
+    "heightPct": 26.85546875
+  },
+  {
+    "file": "brand/letters/02-o.png",
+    "name": "o",
+    "row": 0,
+    "leftPct": 28.80859375,
+    "topPct": 21.484375,
+    "widthPct": 10.498046875,
+    "heightPct": 26.85546875
+  },
+  {
+    "file": "brand/letters/03-b.png",
+    "name": "b",
+    "row": 0,
+    "leftPct": 39.306640625,
+    "topPct": 21.484375,
+    "widthPct": 13.671875,
+    "heightPct": 26.85546875
+  },
+  {
+    "file": "brand/letters/04-e.png",
+    "name": "e",
+    "row": 0,
+    "leftPct": 52.978515625,
+    "topPct": 21.484375,
+    "widthPct": 11.474609375,
+    "heightPct": 26.85546875
+  },
+  {
+    "file": "brand/letters/05-r.png",
+    "name": "r",
+    "row": 0,
+    "leftPct": 64.453125,
+    "topPct": 21.484375,
+    "widthPct": 10.25390625,
+    "heightPct": 26.85546875
+  },
+  {
+    "file": "brand/letters/06-i.png",
+    "name": "i",
+    "row": 0,
+    "leftPct": 74.70703125,
+    "topPct": 21.484375,
+    "widthPct": 11.23046875,
+    "heightPct": 26.85546875
+  },
+  {
+    "file": "brand/letters/07-dot.png",
+    "name": "dot",
+    "row": 0,
+    "leftPct": 81.0546875,
+    "topPct": 29.296875,
+    "widthPct": 4.39453125,
+    "heightPct": 5.126953125
+  },
+  {
+    "file": "brand/letters/08-P.png",
+    "name": "P",
+    "row": 1,
+    "leftPct": 14.16015625,
+    "topPct": 50.29296875,
+    "widthPct": 20.01953125,
+    "heightPct": 33.69140625
+  },
+  {
+    "file": "brand/letters/09-a.png",
+    "name": "a",
+    "row": 1,
+    "leftPct": 34.1796875,
+    "topPct": 50.29296875,
+    "widthPct": 13.671875,
+    "heightPct": 33.69140625
+  },
+  {
+    "file": "brand/letters/10-r.png",
+    "name": "r",
+    "row": 1,
+    "leftPct": 47.8515625,
+    "topPct": 50.29296875,
+    "widthPct": 11.71875,
+    "heightPct": 33.69140625
+  },
+  {
+    "file": "brand/letters/11-t.png",
+    "name": "t",
+    "row": 1,
+    "leftPct": 59.5703125,
+    "topPct": 50.29296875,
+    "widthPct": 9.27734375,
+    "heightPct": 33.69140625
+  },
+  {
+    "file": "brand/letters/12-y.png",
+    "name": "y",
+    "row": 1,
+    "leftPct": 68.84765625,
+    "topPct": 50.29296875,
+    "widthPct": 16.11328125,
+    "heightPct": 33.69140625
+  }
+]
