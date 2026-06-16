@@ -639,9 +639,17 @@
       .card .badge { top: 1rem; left: 1rem; bottom: auto; }
 
       /* Коверфлоу-колода: z-index — на карточке (для прилипания нейтрален),
-         а масштаб/сдвиг/размытие — на внутреннем article, чтобы scroll-snap не сбивался */
+         масштаб/сдвиг — на article (покадрово, дёшево). Размытие — статичным классом:
+         соседи всегда blur, центр чёткий. Браузер рисует размытие один раз и кеширует,
+         не пересчитывая каждый кадр — иначе на телефоне рывки. */
       .card { position: relative; }
-      .card article { will-change: transform, filter; transform-origin: center center; }
+      .card article {
+        will-change: transform;
+        transform-origin: center center;
+        filter: blur(5px);
+        transition: filter .4s ease;
+      }
+      .card.is-center article { filter: none; }
 
       /* ── Студия: стена полароидов (вместо карусели) ── */
       .studio-nav { display: none; }                 /* стрелки + точки не нужны */
@@ -1403,23 +1411,46 @@
     const gap = parseFloat(getComputedStyle(track).columnGap) || 16;
     const centerOf = (el) => el.offsetLeft - (track.clientWidth - el.offsetWidth) / 2;
 
-    // Коверфлоу-колода: чем дальше карточка от центра — тем мельче, размытее и глубже ЗА главной.
+    // Коверфлоу-колода: чем дальше карточка от центра — тем мельче и глубже ЗА главной.
     // Трансформ вешаем на article (визуал), а не на li.card (он держит scroll-snap) — иначе петля.
+    // Покадрово трогаем ТОЛЬКО transform/opacity (видеочип) и лишь у близких карточек.
+    // Размытие — классом .is-center (см. CSS), а не каждый кадр — так нет рывков на телефоне.
+    const TAU = 2.4;                                          // дальше — за кадром, покадрово не считаем
+    const zCache = new Array(cards.length).fill(0);
+    const farFlag = new Array(cards.length).fill(false);
+    let lastCenter = -1;
     function coverflow() {
       const mid = track.scrollLeft + track.clientWidth / 2;
-      for (const el of cards) {
+      let centerIdx = HOME0, centerBest = Infinity;
+      for (let i = 0; i < cards.length; i++) {
+        const el = cards[i];
         const inner = el.firstElementChild;                   // article
         if (!inner) continue;
         const cc = el.offsetLeft + el.offsetWidth / 2;        // центр карточки (без трансформа)
         const d = (cc - mid) / (el.offsetWidth + gap);        // расстояние в «карточках»
-        const ad = Math.min(Math.abs(d), 3);
-        const scale = Math.max(0.7, 1.05 - ad * 0.27);
-        const pull = -d * el.offsetWidth * 0.44;              // подтянуть к центру → уехать за главную
-        const blur = ad < 1.8 ? Math.min(10, ad * 7) : 0;     // блюрим только видимые соседей, не клоны за кадром
+        const ad = Math.abs(d);
+        if (ad < centerBest) { centerBest = ad; centerIdx = i; }
+        if (ad > TAU) {                                       // далеко за кадром — «дальнее» состояние один раз
+          if (!farFlag[i]) {
+            inner.style.transform = 'scale(.78)';
+            inner.style.opacity = '.72';
+            if (zCache[i] !== 1) { el.style.zIndex = '1'; zCache[i] = 1; }
+            farFlag[i] = true;
+          }
+          continue;
+        }
+        farFlag[i] = false;
+        const scale = 1.04 - ad * 0.20;                       // мягче прежнего → меньше резкости
+        const pull = -d * el.offsetWidth * 0.40;             // подтянуть к центру → уехать за главную
         inner.style.transform = 'translateX(' + pull.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
-        inner.style.filter = blur > 0.4 ? 'blur(' + blur.toFixed(1) + 'px)' : 'none';
-        inner.style.opacity = Math.max(0.72, 1 - ad * 0.12).toFixed(2);
-        el.style.zIndex = String(Math.round(50 - ad * 18));   // главная — поверх соседей (z-index на li, snap не трогает)
+        inner.style.opacity = (1 - ad * 0.12).toFixed(2);
+        const zi = 50 - Math.round(ad * 10);                 // ближе к центру — выше; пишем только при смене
+        if (zCache[i] !== zi) { el.style.zIndex = String(zi); zCache[i] = zi; }
+      }
+      if (centerIdx !== lastCenter) {                         // навести резкость на новую центральную (CSS-переход сам сгладит)
+        if (lastCenter >= 0 && cards[lastCenter]) cards[lastCenter].classList.remove('is-center');
+        cards[centerIdx].classList.add('is-center');
+        lastCenter = centerIdx;
       }
     }
     let raf = 0;
