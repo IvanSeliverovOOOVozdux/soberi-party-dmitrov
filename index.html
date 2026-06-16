@@ -638,18 +638,28 @@
       /* Чипы — оба наверх, чтобы не сталкивались с именем */
       .card .badge { top: 1rem; left: 1rem; bottom: auto; }
 
-      /* Коверфлоу-колода: z-index — на карточке (для прилипания нейтрален),
-         масштаб/сдвиг — на article (покадрово, дёшево). Размытие — статичным классом:
-         соседи всегда blur, центр чёткий. Браузер рисует размытие один раз и кеширует,
-         не пересчитывая каждый кадр — иначе на телефоне рывки. */
+      /* Коверфлоу-колесо: масштаб/сдвиг — трансформом на карточке (через JS, дёшево).
+         Размытие — статичным классом: соседи всегда blur, центр чёткий. Браузер рисует
+         размытие один раз и кеширует, не пересчитывая каждый кадр — иначе на телефоне рывки. */
       .card { position: relative; }
       .card article {
-        will-change: transform;
         transform-origin: center center;
         filter: blur(5px);
         transition: filter .22s ease;
       }
       .card.is-center article { filter: none; }
+
+      /* JS-режим «колесо»: убираем нативный скролл, карточки кладём друг на друга по центру
+         и расставляем трансформом. Без JS (fallback) остаётся обычный свайп-скролл выше. */
+      .rail-track.wheel {
+        display: block; overflow: hidden; touch-action: pan-y;
+        height: 96vw; padding: 0; scroll-snap-type: none;
+      }
+      .rail-track.wheel .card {
+        position: absolute; top: 50%; left: 50%;
+        flex: none; width: 68vw; margin: 0; scroll-snap-align: none;
+        will-change: transform;
+      }
 
       /* ── Студия: стена полароидов (вместо карусели) ── */
       .studio-nav { display: none; }                 /* стрелки + точки не нужны */
@@ -716,9 +726,6 @@
       .booking-contacts { order: 2; margin-top: 1rem; align-items: center; }          /* контакты — под форму, по центру */
       .booking-contacts li { justify-content: center; }
     }
-
-    /* Клоны карусели нужны только на мобилке — на десктопе их быть не должно */
-    @media (min-width: 641px) { .formats .rail-track .clone { display: none !important; } }
 
   </style>
 </head>
@@ -1391,132 +1398,117 @@
     });
   })();
 
-  // Бесконечная (закольцованная) карусель форматов — только на мобилке.
-  // Клонируем набор слева и справа; когда долистали до клона — мгновенно
-  // перепрыгиваем на идентичный оригинал, поэтому шва не видно.
+  // Карусель форматов на мобилке — «колесо» из 4 фото. Без клонов: смещение pos
+  // (в «карточках») сворачивается по кругу, поэтому те же 4 карточки бесконечно
+  // вращаются. Сильный свайп задаёт инерцию — колесо крутится несколько кругов
+  // и плавно приклеивается к ближайшей карточке.
   (function () {
     if (!matchMedia('(max-width: 640px)').matches) return;
     const track = document.querySelector('.formats .rail-track');
     if (!track) return;
-    const originals = Array.from(track.children);
-    const N = originals.length;
+    const cards = Array.from(track.children);
+    const N = cards.length;
     if (N < 2) return;
 
-    const HOME = 5;                                            // наборов-клонов с каждой стороны (большой запас на быстрый свайп)
-    for (let s = 0; s < HOME; s++) originals.forEach(n => { const c = n.cloneNode(true); c.classList.add('clone'); c.setAttribute('aria-hidden', 'true'); track.insertBefore(c, originals[0]); });
-    for (let s = 0; s < HOME; s++) originals.forEach(n => { const c = n.cloneNode(true); c.classList.add('clone'); c.setAttribute('aria-hidden', 'true'); track.appendChild(c); });
+    track.classList.add('wheel');                            // включаем JS-режим (см. CSS .rail-track.wheel)
 
-    const cards = Array.from(track.children);                 // (HOME*2+1)*N штук; оригиналы на [HOME*N, (HOME+1)*N)
-    const HOME0 = HOME * N;                                    // индекс первого оригинала
-    const gap = parseFloat(getComputedStyle(track).columnGap) || 16;
-    const centerOf = (el) => el.offsetLeft - (track.clientWidth - el.offsetWidth) / 2;
+    const SPREAD = 0.58;          // насколько разъезжаются соседи (доля ширины карточки)
+    const FRICTION = 0.9975;      // затухание инерции за мс (меньше → крутится дольше)
+    const MAXV = 0.05;            // потолок скорости, карточек/мс
+    const MINV = 0.0009;          // ниже — пора приклеиваться к ближайшей
+    const FASTV = 0.004;          // быстрее — резкость не наводим (всё мягко размыто)
 
-    // Коверфлоу-колода: чем дальше карточка от центра — тем мельче и глубже ЗА главной.
-    // Трансформ вешаем на article (визуал), а не на li.card (он держит scroll-snap) — иначе петля.
-    // Покадрово трогаем ТОЛЬКО transform/opacity (видеочип) и лишь у близких карточек.
-    // Размытие — классом .is-center (см. CSS), а не каждый кадр — так нет рывков на телефоне.
-    const TAU = 2.4;                                          // дальше — за кадром, покадрово не считаем
-    const FAST = 1.1;                                         // px/мс: быстрее — это «полёт», резкость не наводим
-    const zCache = new Array(cards.length).fill(0);
-    const farFlag = new Array(cards.length).fill(false);
-    let lastCenter = -1, vel = 0, lastSL = null, lastTS = 0;
-    function coverflow() {
-      const mid = track.scrollLeft + track.clientWidth / 2;
-      let ci = HOME0, cb = Infinity;                          // ближайшая к центру карточка
-      for (let i = 0; i < cards.length; i++) {
-        const el = cards[i];
-        const inner = el.firstElementChild;                   // article
-        if (!inner) continue;
-        const cc = el.offsetLeft + el.offsetWidth / 2;        // центр карточки (без трансформа)
-        const d = (cc - mid) / (el.offsetWidth + gap);        // расстояние в «карточках»
-        const ad = Math.abs(d);
-        if (ad < cb) { cb = ad; ci = i; }
-        if (ad > TAU) {                                       // далеко за кадром — «дальнее» состояние один раз
-          if (!farFlag[i]) {
-            inner.style.transform = 'scale(.78)';
-            inner.style.opacity = '.72';
-            if (zCache[i] !== 1) { el.style.zIndex = '1'; zCache[i] = 1; }
-            farFlag[i] = true;
-          }
-          continue;
-        }
-        farFlag[i] = false;
-        const scale = 1.04 - ad * 0.20;                       // мягче прежнего → меньше резкости
-        const pull = -d * el.offsetWidth * 0.40;             // подтянуть к центру → уехать за главную
-        inner.style.transform = 'translateX(' + pull.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
-        inner.style.opacity = (1 - ad * 0.12).toFixed(2);
-        const zi = 50 - Math.round(ad * 10);                 // ближе к центру — выше; пишем только при смене
-        if (zCache[i] !== zi) { el.style.zIndex = String(zi); zCache[i] = zi; }
-      }
-      // Резкость по скорости: медленно/почти стоим → центр в фокус (как было);
-      // на быстром полёте фокус не трогаем → нет тряски при пролёте нескольких карточек.
-      if (vel < FAST) focus(ci); else blurAll();
-    }
-    let raf = 0;
-    const scheduleCF = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; coverflow(); }); };
+    let cardW = cards[0].offsetWidth || track.clientWidth * 0.68;
+    const measure = () => { cardW = cards[0].offsetWidth || track.clientWidth * 0.68; };
 
-    // Резкость (класс .is-center) наводим ТОЛЬКО когда свайп остановился — иначе при пролёте
-    // нескольких карточек фокус дёргается туда-сюда и карточки «трясутся».
+    let pos = 0, vel = 0, lastCenter = -1;
+    const wrap = (o) => { const m = ((o % N) + N) % N; return m > N / 2 ? m - N : m; };  // в диапазон [-N/2, N/2)
+
     const focus = (i) => {
+      i = ((i % N) + N) % N;
       if (lastCenter === i) return;
       if (lastCenter >= 0 && cards[lastCenter]) cards[lastCenter].classList.remove('is-center');
-      if (cards[i]) cards[i].classList.add('is-center');
+      cards[i].classList.add('is-center');
       lastCenter = i;
     };
     const blurAll = () => { if (lastCenter >= 0 && cards[lastCenter]) cards[lastCenter].classList.remove('is-center'); lastCenter = -1; };
 
-    let ready = false, jumping = false;
-    const recenter = () => {                                  // программный сдвиг — гасим guard'ом, чтобы не сбросить фокус
-      jumping = true;
-      track.scrollLeft = centerOf(cards[HOME0]);
-      vel = 0; lastSL = null;                                 // не считать программный сдвиг за «полёт»
-      coverflow(); focus(HOME0); ready = true;
-      setTimeout(() => { jumping = false; }, 120);
-    };
-    requestAnimationFrame(() => requestAnimationFrame(recenter));
-
-    // Перескок с клона на оригинал — ТОЛЬКО когда движение полностью остановилось,
-    // иначе прыжок посреди инерции = карусель «убегает». Здесь же наводим резкость.
-    const settle = () => {
-      if (!ready || jumping) return;                    // защита от повторного входа (свой же scrollend)
-      const c = track.scrollLeft;
-      let nearest = 0, best = Infinity;
-      cards.forEach((el, i) => { const d = Math.abs(centerOf(el) - c); if (d < best) { best = d; nearest = i; } });
-      const mod = ((nearest % N) + N) % N;              // какая это карточка по сути
-      const target = HOME0 + mod;                       // вернуть «домой» в центральный набор
-      if (target !== nearest) {
-        jumping = true;
-        const prev = track.style.scrollBehavior;
-        track.style.scrollBehavior = 'auto';
-        track.scrollLeft = centerOf(cards[target]);
-        track.style.scrollBehavior = prev;
-        coverflow();
-        setTimeout(() => { jumping = false; }, 120);    // переждать собственный scrollend
+    function render() {
+      for (let i = 0; i < N; i++) {
+        const o = wrap(i - pos);                             // смещение карточки от центра, свёрнутое по кругу
+        const ao = Math.min(Math.abs(o), 2);
+        const tx = o * cardW * SPREAD;
+        const scale = 1 - ao * 0.17;                         // центр 1.0, соседи мельче, «спина» ~0.66
+        const el = cards[i];
+        el.style.transform = 'translate(calc(-50% + ' + tx.toFixed(1) + 'px), -50%) scale(' + scale.toFixed(3) + ')';
+        el.style.opacity = (1 - ao * 0.12).toFixed(2);
+        el.style.zIndex = String(Math.round(50 - ao * 12));  // ближе к центру — выше
       }
-      vel = 0; lastSL = null;                           // остановились; гасим замер скорости после возможного перескока
-      focus(target);                                    // навести резкость на финальную карточку
+      // Резкость по скорости: медленно/стоим → центр в фокус; быстрый полёт → мягко размыто (без тряски).
+      if (Math.abs(vel) < FASTV) focus(Math.round(pos)); else blurAll();
+    }
+
+    // ── инерция и приклеивание ──
+    let raf = 0, lastT = 0, mode = 'idle', target = 0;       // idle | fling | snap
+    function frame(now) {
+      const dt = Math.min(34, now - lastT || 16); lastT = now;
+      if (mode === 'fling') {
+        pos += vel * dt;
+        vel *= Math.pow(FRICTION, dt);
+        if (Math.abs(vel) < MINV) { mode = 'snap'; target = Math.round(pos); }
+      } else if (mode === 'snap') {
+        pos += (target - pos) * Math.min(1, dt * 0.013);     // плавно дотягиваем к ближайшей
+        if (Math.abs(target - pos) < 0.002) { pos = target; mode = 'idle'; }
+      }
+      render();
+      if (mode !== 'idle') { raf = requestAnimationFrame(frame); }
+      else { raf = 0; vel = 0; pos = ((pos % N) + N) % N; focus(Math.round(pos)); }
+    }
+    const run = () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } };
+
+    // ── жесты ──
+    let dragging = false, startX = 0, startY = 0, lastX = 0, lastMT = 0, decided = false, horiz = false;
+    track.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      dragging = true; decided = false; horiz = false;
+      startX = lastX = t.clientX; startY = t.clientY; lastMT = performance.now();
+      mode = 'idle'; vel = 0; if (raf) { cancelAnimationFrame(raf); raf = 0; }   // ловим колесо на лету
+    }, { passive: true });
+    track.addEventListener('touchmove', (e) => {
+      if (!dragging) return;
+      const t = e.touches[0];
+      if (!decided) {                                        // определяем направление жеста
+        const adx = Math.abs(t.clientX - startX), ady = Math.abs(t.clientY - startY);
+        if (adx < 6 && ady < 6) return;
+        decided = true; horiz = adx > ady;
+      }
+      if (!horiz) return;                                    // вертикаль — отдаём прокрутке страницы
+      const dx = t.clientX - lastX;
+      const now = performance.now(), dtt = Math.max(1, now - lastMT);
+      const dPos = -dx / (cardW * SPREAD);                   // карточек за этот шаг
+      pos += dPos;
+      vel = vel * 0.5 + (dPos / dtt) * 0.5;                  // сглаженная мгновенная скорость
+      vel = Math.max(-MAXV, Math.min(MAXV, vel));
+      lastX = t.clientX; lastMT = now;
+      render();
+    }, { passive: true });
+    const endDrag = () => {
+      if (!dragging) return;
+      dragging = false;
+      if (!horiz) return;
+      if (performance.now() - lastMT > 70) vel = 0;          // пауза перед отпусканием = без броска
+      if (Math.abs(vel) > MINV) { mode = 'fling'; } else { mode = 'snap'; target = Math.round(pos); }
+      run();
     };
+    track.addEventListener('touchend', endDrag, { passive: true });
+    track.addEventListener('touchcancel', endDrag, { passive: true });
 
-    const hasScrollend = 'onscrollend' in window;
-    let t;
-    track.addEventListener('scroll', () => {
-      const sl = track.scrollLeft, ts = performance.now();
-      if (lastSL !== null && ts > lastTS) vel = vel * 0.4 + (Math.abs(sl - lastSL) / (ts - lastTS)) * 0.6;  // сглаженная скорость px/мс
-      lastSL = sl; lastTS = ts;
-      scheduleCF();
-      if (jumping) return;                              // программный перескок — таймеры не трогаем
-      clearTimeout(t); t = setTimeout(settle, 110);     // вернуть «домой» + резкость, как только движение замерло
-    }, { passive: true });
-    if (hasScrollend) track.addEventListener('scrollend', settle, { passive: true });
-
-    // Перецентровка только при смене ШИРИНЫ (поворот экрана). Изменения высоты от
-    // показа/скрытия адресной строки на телефоне игнорируем — иначе карусель прыгает.
-    let lastW = window.innerWidth, r;
-    addEventListener('resize', () => {
-      if (window.innerWidth === lastW) return;
-      lastW = window.innerWidth;
-      clearTimeout(r); r = setTimeout(recenter, 150);
-    }, { passive: true });
+    // первичная раскладка + при смене ширины экрана
+    const layout = () => { measure(); pos = ((pos % N) + N) % N; render(); focus(Math.round(pos)); };
+    measure(); render(); focus(0);                           // сразу, чтобы не мелькнула стопка
+    requestAnimationFrame(() => requestAnimationFrame(layout));
+    let lastW = window.innerWidth;
+    addEventListener('resize', () => { if (window.innerWidth === lastW) return; lastW = window.innerWidth; layout(); }, { passive: true });
   })();
 </script>
 
