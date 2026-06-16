@@ -1417,6 +1417,8 @@
     const MAXV = 0.05;            // потолок скорости, карточек/мс
     const MINV = 0.0009;          // ниже — пора приклеиваться к ближайшей
     const FASTV = 0.004;          // быстрее — резкость не наводим (всё мягко размыто)
+    const FLING = 0.013;          // выше — «сильный» свайп → свободное вращение; ниже → ровно 1 карточка
+    const PROJECT = 70;           // мс «наброса» по скорости при аккуратном свайпе (помогает доводить до соседней)
 
     let cardW = cards[0].offsetWidth || track.clientWidth * 0.68;
     const measure = () => { cardW = cards[0].offsetWidth || track.clientWidth * 0.68; };
@@ -1467,11 +1469,12 @@
     const run = () => { if (!raf) { lastT = performance.now(); raf = requestAnimationFrame(frame); } };
 
     // ── жесты ──
-    let dragging = false, startX = 0, startY = 0, lastX = 0, lastMT = 0, decided = false, horiz = false;
+    let dragging = false, startX = 0, startY = 0, lastX = 0, lastMT = 0, decided = false, horiz = false, startRound = 0;
     track.addEventListener('touchstart', (e) => {
       const t = e.touches[0];
       dragging = true; decided = false; horiz = false;
       startX = lastX = t.clientX; startY = t.clientY; lastMT = performance.now();
+      startRound = Math.round(pos);                                             // карточка, с которой стартуем
       mode = 'idle'; vel = 0; if (raf) { cancelAnimationFrame(raf); raf = 0; }   // ловим колесо на лету
     }, { passive: true });
     track.addEventListener('touchmove', (e) => {
@@ -1496,9 +1499,18 @@
     const endDrag = () => {
       if (!dragging) return;
       dragging = false;
-      if (!horiz) return;
+      if (!horiz) {                                          // тап/вертикаль — доровнять к ближайшей, если сбили вращение
+        if (Math.abs(pos - Math.round(pos)) > 0.001) { mode = 'snap'; target = Math.round(pos); run(); }
+        return;
+      }
       if (performance.now() - lastMT > 70) vel = 0;          // пауза перед отпусканием = без броска
-      if (Math.abs(vel) > MINV) { mode = 'fling'; } else { mode = 'snap'; target = Math.round(pos); }
+      if (Math.abs(vel) >= FLING) {                          // сильный свайп → свободное вращение (крутится долго)
+        mode = 'fling';
+      } else {                                               // аккуратный свайп → ровно одна карточка
+        const projected = pos + vel * PROJECT;               // лёгкий наброс по скорости, чтобы доводило до соседней
+        let tgt = Math.max(startRound - 1, Math.min(startRound + 1, Math.round(projected)));  // не больше одной за жест
+        mode = 'snap'; target = tgt;
+      }
       run();
     };
     track.addEventListener('touchend', endDrag, { passive: true });
