@@ -303,7 +303,7 @@
     .card .frame { aspect-ratio: 3/4; }
     .card .frame img { transition: transform .7s cubic-bezier(0.16,1,0.3,1); }
     .card:hover .frame img { transform: scale(1.03); }
-    .card .price { position: absolute; top: 1rem; right: 1rem; }
+    .card .price { position: absolute; top: 1rem; right: 1rem; left: auto; }
     .card .badge { position: absolute; bottom: 1rem; left: 1rem; }
     .card-meta { padding-top: 1.1rem; text-align: center; }
     .card-meta h3 { font-size: clamp(1.35rem, 1.9vw, 1.7rem); color: var(--cocoa); line-height: 1.3; }
@@ -480,8 +480,9 @@
     body.lb-lock .header { backdrop-filter: none; }
     body.lb-lock .petal-field { display: none; }
     @media (max-width: 620px) {
-      .lightbox-arrow { width: 2.5rem; height: 2.5rem; }
-      .lightbox-img { max-height: 64vh; }
+      .lightbox-arrow { display: none; }            /* стрелки убраны — листаем свайпом */
+      .lightbox-img { max-height: 66vh; }
+      .lightbox-imgwrap { touch-action: pan-y; }    /* горизонтальный свайп ловим сами */
       .lightbox-thumbs img { width: 44px; height: 44px; }
     }
 
@@ -584,6 +585,132 @@
       font-size: .75rem; color: rgba(251,246,242,.5);
     }
     @media (min-width: 640px) { .footer-bottom { flex-direction: row; align-items: center; } }
+
+    /* ═══════════════════════════════════════════════════════════
+       ТОЛЬКО МОБИЛКА — телефоны (ширина ≤ 640px).
+       Все правки здесь НЕ влияют на версию для компьютера.
+       Добавляй мобильные стили внутрь этого блока.
+       ═══════════════════════════════════════════════════════════ */
+    @media (max-width: 640px) {
+
+      /* Убрать шапку целиком (вместе с кнопкой «Записаться») */
+      .header { display: none; }
+
+      /* Убрать фикс-стрелки навигации по блокам (↑/↓ слева внизу) */
+      .section-nav { display: none; }
+
+      /* Без шапки контент hero уезжал вверх — центрируем по вертикали */
+      .hero { display: flex; flex-direction: column; justify-content: center; }
+
+      /* Меньше лепестков в hero: оставляем первые 8 (крупные, обрамляют лого), мелкие прячем */
+      .hero .petal:nth-child(n+9) { display: none; }
+
+      /* ───── Форматы → свайп-карусель с коверфлоу ───── */
+      .formats-head { text-align: center; align-items: center; }
+      .formats-title { max-width: none; }
+
+      .formats .card { opacity: 1; }          /* каскад anime.js на мобилке выключен */
+      .rail { padding: 0; }
+      .rail-track {
+        position: relative;
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        -webkit-overflow-scrolling: touch;
+        padding: .5rem 16vw 1.25rem;
+        scroll-padding-inline: 16vw;
+        scrollbar-width: none;
+      }
+      .rail-track::-webkit-scrollbar { display: none; }
+      .card { flex: 0 0 68vw; scroll-snap-align: center; }
+
+      /* Имя формата залазит на картинку снизу */
+      .card article { position: relative; }
+      .card .card-meta {
+        position: absolute; left: 0; right: 0; bottom: 0;
+        padding: 2.6rem 1rem 1.1rem;
+        background: linear-gradient(to top, rgba(58,46,42,.85), rgba(58,46,42,.35) 55%, transparent);
+        border-radius: 0 0 28px 28px;
+        pointer-events: none;
+      }
+      .card .card-meta h3 { color: var(--milk); font-size: 1.4rem; }
+      /* Чипы — оба наверх, чтобы не сталкивались с именем */
+      .card .badge { top: 1rem; left: 1rem; bottom: auto; }
+
+      /* Коверфлоу-колода: z-index — на карточке (для прилипания нейтрален),
+         а масштаб/сдвиг/размытие — на внутреннем article, чтобы scroll-snap не сбивался */
+      .card { position: relative; }
+      .card article { will-change: transform, filter; transform-origin: center center; }
+
+      /* ── Студия: стена полароидов (вместо карусели) ── */
+      .studio-nav { display: none; }                 /* стрелки + точки не нужны */
+      .studio-gallery {
+        display: flex; flex-direction: column; align-items: center;
+        gap: 0; max-width: none; margin: 0 auto; padding: .5rem 0 1rem;
+      }
+      .studio-shot { display: contents; }            /* раскрываем фигуру — все 3 фото становятся отдельными снимками */
+      .studio-shot img {
+        position: relative; display: block;
+        width: 72%; height: auto; aspect-ratio: 3 / 4; object-fit: cover;
+        background: #fffdf8; padding: .55rem .55rem 2.1rem;   /* белая рамка + поле снизу = полароид */
+        border-radius: 3px; border: 0;
+        box-shadow: 0 16px 34px -14px rgba(58,46,42,.5), 0 2px 6px rgba(58,46,42,.12);
+        opacity: 1; transform: none; transition: none;
+        margin-top: -2.1rem;                          /* снимки лежат внахлёст */
+      }
+      .studio-shot:first-child img:first-of-type { margin-top: .25rem; }
+      /* лёгкий разворот и сдвиг у каждого — будто раскиданы по стене */
+      .studio-shot:nth-child(1) img:nth-of-type(1){ rotate:-3.5deg; left:-5%; }
+      .studio-shot:nth-child(1) img:nth-of-type(2){ rotate: 2.5deg; left: 6%; width:69%; }
+      .studio-shot:nth-child(1) img:nth-of-type(3){ rotate:-1.5deg; left:-3%; width:74%; }
+      .studio-shot:nth-child(2) img:nth-of-type(1){ rotate: 3deg;   left: 5%; }
+      .studio-shot:nth-child(2) img:nth-of-type(2){ rotate:-2.5deg; left:-6%; width:70%; }
+      .studio-shot:nth-child(2) img:nth-of-type(3){ rotate: 2deg;   left: 4%; width:73%; }
+      .studio-shot:nth-child(3) img:nth-of-type(1){ rotate:-2.5deg; left:-4%; }
+      .studio-shot:nth-child(3) img:nth-of-type(2){ rotate: 2.5deg; left: 6%; width:69%; }
+      .studio-shot:nth-child(3) img:nth-of-type(3){ rotate:-2deg;   left:-3%; width:74%; }
+
+      /* каждый полароид «падает» и устаканивается, когда долистал до него */
+      @supports (animation-timeline: view()) {
+        .studio-shot img {
+          animation: polDrop linear both;
+          animation-timeline: view();
+          animation-range: entry 0% entry 80%;
+        }
+        @keyframes polDrop {
+          from { transform: translateY(34px) scale(.94); opacity: 0; }
+          to   { transform: translateY(0) scale(1); opacity: 1; }
+        }
+      }
+
+      /* ── Отзывы: зигзаг-«пузыри», как живой диалог ── */
+      .reviews-head { text-align: center; }
+      .reviews-cta { justify-content: center; }
+      .reviews-grid { display: flex; flex-direction: column; gap: 1.1rem; margin-top: 2.5rem; }
+      .review { padding: 1.35rem 1.5rem; border-radius: 22px; gap: 1rem; }
+      .review-body { font-size: 1.15rem; line-height: 1.34; }
+      .review-foot { flex-wrap: wrap; gap: .35rem .85rem; padding-top: 1rem; }
+      /* нечётные — слева, чётные — справа, разной ширины + срезанный угол как у реплики */
+      .reviews-grid .review:nth-child(odd)  { align-self: flex-start; max-width: 88%; border-bottom-left-radius: 7px; }
+      .reviews-grid .review:nth-child(even) { align-self: flex-end;   max-width: 80%; border-bottom-right-radius: 7px; }
+      /* всплывают со своей стороны, по очереди при скролле */
+      .reviews-grid .review:nth-child(odd).rv  { transform: translate(-24px, 8px); }
+      .reviews-grid .review:nth-child(even).rv { transform: translate(24px, 8px); }
+      .reviews-grid .review.rv.on { transform: none; }
+
+      /* ── Запись: всё по центру, контакты — под форму ── */
+      .booking .wrap { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 1.25rem; }
+      .booking-intro { display: contents; }              /* раскрываем вступление в общий столбик */
+      .booking-title, .booking-lead { margin-top: 0; }
+      .booking-lead { max-width: 46ch; }
+      .booking .form { order: 1; width: 100%; text-align: left; margin-top: .5rem; }  /* форма выше контактов; поля остаются слева */
+      .booking-contacts { order: 2; margin-top: 1rem; align-items: center; }          /* контакты — под форму, по центру */
+      .booking-contacts li { justify-content: center; }
+    }
+
+    /* Клоны карусели нужны только на мобилке — на десктопе их быть не должно */
+    @media (min-width: 641px) { .formats .rail-track .clone { display: none !important; } }
 
   </style>
 </head>
@@ -803,7 +930,7 @@
 <section id="booking" class="booking has-petals">
   <div class="petal-field" data-petals="16" aria-hidden="true"></div>
   <div class="wrap">
-    <div>
+    <div class="booking-intro">
       <span class="eyebrow">Запись</span>
       <h2 class="booking-title rv">соберём ваш <em>девичник</em></h2>
       <p class="booking-lead rv d1">Оставьте заявку — Мария напишет в Telegram или позвонит в течение пары часов, чтобы согласовать дату, формат и количество девушек.</p>
@@ -1130,7 +1257,7 @@
 
     // ── Карусель студии: все 3 фото меняются разом, с каскадным кроссфейдом ──
     const gallery = document.querySelector('.studio-gallery');
-    if (gallery) {
+    if (gallery && !matchMedia('(max-width: 640px)').matches) {
       const shots = Array.from(gallery.querySelectorAll('.studio-shot'));
       const count = shots[0].querySelectorAll('img').length;
       const dots = Array.from(document.querySelectorAll('.studio-dots .dot'));
@@ -1213,6 +1340,18 @@
       lb.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', close));
       lb.querySelectorAll('.lightbox-arrow').forEach(b =>
         b.addEventListener('click', () => show(idx + Number(b.dataset.dir))));
+      // свайп пальцем по фото — листаем галерею (вместо стрелок на мобилке)
+      const imgwrap = lb.querySelector('.lightbox-imgwrap');
+      let sx = 0, sy = 0, sw = false;
+      imgwrap.addEventListener('touchstart', (e) => {
+        const t = e.changedTouches[0]; sx = t.clientX; sy = t.clientY; sw = true;
+      }, { passive: true });
+      imgwrap.addEventListener('touchend', (e) => {
+        if (!sw) return; sw = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) > 45 && Math.abs(dx) > Math.abs(dy) * 1.4) show(idx + (dx < 0 ? 1 : -1));
+      }, { passive: true });
       document.addEventListener('keydown', (e) => {
         if (!lb.classList.contains('open')) return;
         if (e.key === 'Escape') close();
@@ -1231,8 +1370,8 @@
     const cards = document.querySelectorAll('.formats .card');
     if (!cards.length) return;
     const reveal = () => cards.forEach(c => { c.style.opacity = 1; });
-    // нет библиотеки или анимации отключены в системе — просто показать карточки
-    if (!window.anime || matchMedia('(prefers-reduced-motion: reduce)').matches) { reveal(); return; }
+    // нет библиотеки / анимации отключены / мобилка (там карусель-коверфлоу на CSS) — просто показать карточки
+    if (!window.anime || matchMedia('(prefers-reduced-motion: reduce)').matches || matchMedia('(max-width: 640px)').matches) { reveal(); return; }
     const { animate, stagger, onScroll } = window.anime;
     animate(cards, {
       opacity: [0, 1],
@@ -1242,6 +1381,91 @@
       delay: stagger(110),
       autoplay: onScroll({ target: '.formats', enter: 'bottom-=80 top' }),
     });
+  })();
+
+  // Бесконечная (закольцованная) карусель форматов — только на мобилке.
+  // Клонируем набор слева и справа; когда долистали до клона — мгновенно
+  // перепрыгиваем на идентичный оригинал, поэтому шва не видно.
+  (function () {
+    if (!matchMedia('(max-width: 640px)').matches) return;
+    const track = document.querySelector('.formats .rail-track');
+    if (!track) return;
+    const originals = Array.from(track.children);
+    const N = originals.length;
+    if (N < 2) return;
+
+    const HOME = 3;                                            // наборов-клонов с каждой стороны (запас на быстрый свайп)
+    for (let s = 0; s < HOME; s++) originals.forEach(n => { const c = n.cloneNode(true); c.classList.add('clone'); c.setAttribute('aria-hidden', 'true'); track.insertBefore(c, originals[0]); });
+    for (let s = 0; s < HOME; s++) originals.forEach(n => { const c = n.cloneNode(true); c.classList.add('clone'); c.setAttribute('aria-hidden', 'true'); track.appendChild(c); });
+
+    const cards = Array.from(track.children);                 // (HOME*2+1)*N штук; оригиналы на [HOME*N, (HOME+1)*N)
+    const HOME0 = HOME * N;                                    // индекс первого оригинала
+    const gap = parseFloat(getComputedStyle(track).columnGap) || 16;
+    const centerOf = (el) => el.offsetLeft - (track.clientWidth - el.offsetWidth) / 2;
+
+    // Коверфлоу-колода: чем дальше карточка от центра — тем мельче, размытее и глубже ЗА главной.
+    // Трансформ вешаем на article (визуал), а не на li.card (он держит scroll-snap) — иначе петля.
+    function coverflow() {
+      const mid = track.scrollLeft + track.clientWidth / 2;
+      for (const el of cards) {
+        const inner = el.firstElementChild;                   // article
+        if (!inner) continue;
+        const cc = el.offsetLeft + el.offsetWidth / 2;        // центр карточки (без трансформа)
+        const d = (cc - mid) / (el.offsetWidth + gap);        // расстояние в «карточках»
+        const ad = Math.min(Math.abs(d), 3);
+        const scale = Math.max(0.7, 1.05 - ad * 0.27);
+        const pull = -d * el.offsetWidth * 0.44;              // подтянуть к центру → уехать за главную
+        const blur = ad < 1.8 ? Math.min(10, ad * 7) : 0;     // блюрим только видимые соседей, не клоны за кадром
+        inner.style.transform = 'translateX(' + pull.toFixed(1) + 'px) scale(' + scale.toFixed(3) + ')';
+        inner.style.filter = blur > 0.4 ? 'blur(' + blur.toFixed(1) + 'px)' : 'none';
+        inner.style.opacity = Math.max(0.72, 1 - ad * 0.12).toFixed(2);
+        el.style.zIndex = String(Math.round(50 - ad * 18));   // главная — поверх соседей (z-index на li, snap не трогает)
+      }
+    }
+    let raf = 0;
+    const scheduleCF = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; coverflow(); }); };
+
+    let ready = false;
+    const recenter = () => { track.scrollLeft = centerOf(cards[HOME0]); coverflow(); ready = true; };
+    requestAnimationFrame(() => requestAnimationFrame(recenter));
+
+    // Перескок с клона на оригинал — ТОЛЬКО когда движение полностью остановилось,
+    // иначе прыжок посреди инерции = карусель «убегает».
+    let jumping = false;
+    const settle = () => {
+      if (!ready || jumping) return;                    // защита от повторного входа (свой же scrollend)
+      const c = track.scrollLeft;
+      let nearest = 0, best = Infinity;
+      cards.forEach((el, i) => { const d = Math.abs(centerOf(el) - c); if (d < best) { best = d; nearest = i; } });
+      const mod = ((nearest % N) + N) % N;              // какая это карточка по сути
+      const target = HOME0 + mod;                       // вернуть «домой» в центральный набор
+      if (target !== nearest) {
+        jumping = true;
+        const prev = track.style.scrollBehavior;
+        track.style.scrollBehavior = 'auto';
+        track.scrollLeft = centerOf(cards[target]);
+        track.style.scrollBehavior = prev;
+        coverflow();
+        setTimeout(() => { jumping = false; }, 120);    // переждать собственный scrollend
+      }
+    };
+
+    const hasScrollend = 'onscrollend' in window;
+    let t;
+    track.addEventListener('scroll', () => {
+      scheduleCF();
+      if (!hasScrollend) { clearTimeout(t); t = setTimeout(settle, 150); }  // запасной путь для старых браузеров
+    }, { passive: true });
+    if (hasScrollend) track.addEventListener('scrollend', settle, { passive: true });
+
+    // Перецентровка только при смене ШИРИНЫ (поворот экрана). Изменения высоты от
+    // показа/скрытия адресной строки на телефоне игнорируем — иначе карусель прыгает.
+    let lastW = window.innerWidth, r;
+    addEventListener('resize', () => {
+      if (window.innerWidth === lastW) return;
+      lastW = window.innerWidth;
+      clearTimeout(r); r = setTimeout(recenter, 150);
+    }, { passive: true });
   })();
 </script>
 
