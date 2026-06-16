@@ -1421,7 +1421,6 @@
     let lastCenter = -1;
     function coverflow() {
       const mid = track.scrollLeft + track.clientWidth / 2;
-      let centerIdx = HOME0, centerBest = Infinity;
       for (let i = 0; i < cards.length; i++) {
         const el = cards[i];
         const inner = el.firstElementChild;                   // article
@@ -1429,7 +1428,6 @@
         const cc = el.offsetLeft + el.offsetWidth / 2;        // центр карточки (без трансформа)
         const d = (cc - mid) / (el.offsetWidth + gap);        // расстояние в «карточках»
         const ad = Math.abs(d);
-        if (ad < centerBest) { centerBest = ad; centerIdx = i; }
         if (ad > TAU) {                                       // далеко за кадром — «дальнее» состояние один раз
           if (!farFlag[i]) {
             inner.style.transform = 'scale(.78)';
@@ -1447,22 +1445,31 @@
         const zi = 50 - Math.round(ad * 10);                 // ближе к центру — выше; пишем только при смене
         if (zCache[i] !== zi) { el.style.zIndex = String(zi); zCache[i] = zi; }
       }
-      if (centerIdx !== lastCenter) {                         // навести резкость на новую центральную (CSS-переход сам сгладит)
-        if (lastCenter >= 0 && cards[lastCenter]) cards[lastCenter].classList.remove('is-center');
-        cards[centerIdx].classList.add('is-center');
-        lastCenter = centerIdx;
-      }
     }
     let raf = 0;
     const scheduleCF = () => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; coverflow(); }); };
 
-    let ready = false;
-    const recenter = () => { track.scrollLeft = centerOf(cards[HOME0]); coverflow(); ready = true; };
+    // Резкость (класс .is-center) наводим ТОЛЬКО когда свайп остановился — иначе при пролёте
+    // нескольких карточек фокус дёргается туда-сюда и карточки «трясутся».
+    const focus = (i) => {
+      if (lastCenter === i) return;
+      if (lastCenter >= 0 && cards[lastCenter]) cards[lastCenter].classList.remove('is-center');
+      if (cards[i]) cards[i].classList.add('is-center');
+      lastCenter = i;
+    };
+    const blurAll = () => { if (lastCenter >= 0 && cards[lastCenter]) cards[lastCenter].classList.remove('is-center'); lastCenter = -1; };
+
+    let ready = false, jumping = false, scrolling = false;
+    const recenter = () => {                                  // программный сдвиг — гасим guard'ом, чтобы не сбросить фокус
+      jumping = true;
+      track.scrollLeft = centerOf(cards[HOME0]);
+      coverflow(); focus(HOME0); ready = true;
+      setTimeout(() => { jumping = false; }, 120);
+    };
     requestAnimationFrame(() => requestAnimationFrame(recenter));
 
     // Перескок с клона на оригинал — ТОЛЬКО когда движение полностью остановилось,
-    // иначе прыжок посреди инерции = карусель «убегает».
-    let jumping = false;
+    // иначе прыжок посреди инерции = карусель «убегает». Здесь же наводим резкость.
     const settle = () => {
       if (!ready || jumping) return;                    // защита от повторного входа (свой же scrollend)
       const c = track.scrollLeft;
@@ -1479,12 +1486,16 @@
         coverflow();
         setTimeout(() => { jumping = false; }, 120);    // переждать собственный scrollend
       }
+      focus(target);                                    // навести резкость на финальную карточку
+      scrolling = false;
     };
 
     const hasScrollend = 'onscrollend' in window;
     let t;
     track.addEventListener('scroll', () => {
       scheduleCF();
+      if (jumping) return;                              // программный перескок — фокус/таймеры не трогаем
+      if (!scrolling) { scrolling = true; blurAll(); }  // началось движение → всё мягко размыто, без дёрганья фокуса
       if (!hasScrollend) { clearTimeout(t); t = setTimeout(settle, 150); }  // запасной путь для старых браузеров
     }, { passive: true });
     if (hasScrollend) track.addEventListener('scrollend', settle, { passive: true });
