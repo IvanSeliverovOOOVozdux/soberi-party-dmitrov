@@ -43,7 +43,12 @@
     }
     ::selection { background: var(--pink); color: var(--cocoa); }
 
-    img { max-width: 100%; display: block; }
+    img {
+      max-width: 100%; display: block;
+      -webkit-touch-callout: none;            /* нет меню «сохранить/поделиться» при долгом нажатии (iOS) */
+      -webkit-user-select: none; user-select: none;
+      -webkit-user-drag: none;                /* нельзя перетащить-сохранить (десктоп) */
+    }
     a   { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; color: inherit; }
     ul, ol { list-style: none; }
@@ -1053,6 +1058,11 @@
 </div>
 
 <script>
+  // Убираем меню «сохранить/поделиться» на картинках (правый клик / долгое нажатие)
+  document.addEventListener('contextmenu', (e) => {
+    if (e.target && e.target.tagName === 'IMG') e.preventDefault();
+  });
+
   // Лого прорисовывается после того, как проявился текст героя
   (function () {
     const logo = document.querySelector('.hero-logo-wrap');
