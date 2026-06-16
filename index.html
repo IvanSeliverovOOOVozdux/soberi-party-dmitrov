@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- При перезагрузке всегда открывать страницу сверху (не восстанавливать позицию) -->
+  <script>if('scrollRestoration' in history)history.scrollRestoration='manual';</script>
   <title>Soberi Party — творческие девичники в Дмитрове</title>
   <meta name="description" content="Soberi Party — творческие девичники и мастер-классы для девушек в Дмитрове. Керамика, fluid art, картины с подсветкой, текстурные картины, акварель.">
   <meta property="og:title" content="Soberi Party — творческие девичники в Дмитрове">
@@ -1058,6 +1060,10 @@
 </div>
 
 <script>
+  // Всегда стартуем с верха страницы при загрузке/обновлении и возврате из кеша
+  window.addEventListener('load', () => window.scrollTo(0, 0));
+  window.addEventListener('pageshow', () => window.scrollTo(0, 0));
+
   // Убираем меню «сохранить/поделиться» на картинках (правый клик / долгое нажатие)
   document.addEventListener('contextmenu', (e) => {
     if (e.target && e.target.tagName === 'IMG') e.preventDefault();
