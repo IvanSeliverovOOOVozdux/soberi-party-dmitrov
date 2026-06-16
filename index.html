@@ -546,12 +546,14 @@
     }
     @media (min-width: 860px) { .form { padding: 2.5rem; } }
     .field { display: flex; flex-direction: column; gap: .5rem; }
-    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .field-row { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 1rem; }
+    @media (max-width: 400px) { .field-row { grid-template-columns: 1fr; } }
     .field label, .field-label {
       font-size: .68rem; letter-spacing: .18em; text-transform: uppercase; color: var(--taupe);
     }
     .field-label .req { color: var(--rose); }
     .field input, .field select {
+      width: 100%; min-width: 0;
       height: 3rem; padding: 0 1rem;
       border-radius: 16px; border: 1px solid var(--line);
       background: var(--milk);
