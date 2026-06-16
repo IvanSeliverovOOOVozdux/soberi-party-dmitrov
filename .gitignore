@@ -2,3 +2,17 @@ node_modules/
 .DS_Store
 .vercel
 *.log
+
+# рабочее сырьё и скрины — не для деплоя
+.shots/
+media/
+video/
+s-prototype.html
+
+# необработанные исходники фото (на сайте не используются)
+photo/отзывы/
+photo/photo_2026-*.jpg
+photo/format-watercolor.jpg
+photo/detail-*.jpg
+photo/studio-1.jpg
+photo/studio-2.jpg
