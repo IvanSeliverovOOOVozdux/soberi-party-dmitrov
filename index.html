@@ -50,7 +50,9 @@
       -webkit-touch-callout: none;            /* нет меню «сохранить/поделиться» при долгом нажатии (iOS) */
       -webkit-user-select: none; user-select: none;
       -webkit-user-drag: none;                /* нельзя перетащить-сохранить (десктоп) */
+      pointer-events: none;                   /* не даём браузеру (Яндекс/Edge) лепить панель «поиск/перевод» при наведении */
     }
+    .lightbox-thumbs img { pointer-events: auto; }   /* миниатюры в галерее должны кликаться */
     a   { color: inherit; text-decoration: none; }
     button, input, select, textarea { font: inherit; color: inherit; }
     ul, ol { list-style: none; }
