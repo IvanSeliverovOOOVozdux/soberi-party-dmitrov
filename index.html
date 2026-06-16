@@ -1483,6 +1483,7 @@
         decided = true; horiz = adx > ady;
       }
       if (!horiz) return;                                    // вертикаль — отдаём прокрутке страницы
+      e.preventDefault();                                    // горизонталь — лочим страницу, чтобы не ехала вверх/вниз
       const dx = t.clientX - lastX;
       const now = performance.now(), dtt = Math.max(1, now - lastMT);
       const dPos = -dx / (cardW * SPREAD);                   // карточек за этот шаг
@@ -1491,7 +1492,7 @@
       vel = Math.max(-MAXV, Math.min(MAXV, vel));
       lastX = t.clientX; lastMT = now;
       render();
-    }, { passive: true });
+    }, { passive: false });
     const endDrag = () => {
       if (!dragging) return;
       dragging = false;
