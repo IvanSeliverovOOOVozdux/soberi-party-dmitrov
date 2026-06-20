@@ -16,3 +16,8 @@ photo/format-watercolor.jpg
 photo/detail-*.jpg
 photo/studio-1.jpg
 photo/studio-2.jpg
+
+# исходники фото мастер-классов и build-скрипты (на сайте не используются)
+фото для матер классов/
+process-mk.js
+generate-mk.js
