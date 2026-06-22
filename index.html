@@ -2036,6 +2036,9 @@
       const faded    = new Promise((r) => setTimeout(r, 300));
       const cap      = new Promise((r) => setTimeout(r, 700));
       Promise.race([Promise.all([imgReady, faded]), cap]).then(() => {
+        // жёстко гасим текст БЕЗ перехода и сбрасываем старый слой — тогда старый и новый текст не наложатся
+        info.style.transition = 'none'; info.style.opacity = '0';
+        void info.offsetWidth;                                   // принудительный reflow — старый текст точно убран
         curClass = target; updateInfo(); buildDeck(); preloadAround(curClass);
         stack.style.transition = 'none';
         stack.style.transform = mobile ? 'translateY(14px) scale(.95)' : 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
