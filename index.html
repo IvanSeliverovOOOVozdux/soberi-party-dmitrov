@@ -2036,19 +2036,21 @@
       const faded    = new Promise((r) => setTimeout(r, 300));
       const cap      = new Promise((r) => setTimeout(r, 700));
       Promise.race([Promise.all([imgReady, faded]), cap]).then(() => {
-        // жёстко гасим текст БЕЗ перехода и сбрасываем старый слой — тогда старый и новый текст не наложатся
-        info.style.transition = 'none'; info.style.opacity = '0';
-        void info.offsetWidth;                                   // принудительный reflow — старый текст точно убран
-        curClass = target; updateInfo(); buildDeck(); preloadAround(curClass);
-        stack.style.transition = 'none';
-        stack.style.transform = mobile ? 'translateY(14px) scale(.95)' : 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
-        // двойной rAF: сначала применяем стартовую позицию, потом анимируем — без рывка
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          stack.style.transition = 'opacity .42s ease, transform .55s cubic-bezier(.16,1,.3,1)';
-          stack.style.transform = mobile ? 'none' : 'translateX(0)'; stack.style.opacity = '1';
-          info.style.transition = 'opacity .45s ease'; info.style.opacity = '1';
-          swapping = false; autoPlay();
-        }));
+        // ПОЛНОСТЬЮ убираем текст из отрисовки (visibility:hidden) и ждём кадр — старого текста физически нет,
+        // только потом подменяем. Это лечит «призрак» наложения на телефоне (opacity недостаточно).
+        info.style.transition = 'none'; info.style.opacity = '0'; info.style.visibility = 'hidden';
+        requestAnimationFrame(() => {
+          curClass = target; updateInfo(); buildDeck(); preloadAround(curClass);
+          stack.style.transition = 'none';
+          stack.style.transform = mobile ? 'translateY(14px) scale(.95)' : 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
+          requestAnimationFrame(() => requestAnimationFrame(() => {
+            info.style.visibility = 'visible';
+            stack.style.transition = 'opacity .42s ease, transform .55s cubic-bezier(.16,1,.3,1)';
+            stack.style.transform = mobile ? 'none' : 'translateX(0)'; stack.style.opacity = '1';
+            info.style.transition = 'opacity .45s ease'; info.style.opacity = '1';
+            swapping = false; autoPlay();
+          }));
+        });
       });
     }
 
