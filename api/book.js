@@ -7,8 +7,9 @@ const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).sl
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ ok: false, error: 'method not allowed' }); return; }
 
-  const CHAT = process.env.ADMIN_CHAT_ID;
-  if (!process.env.BOT_TOKEN || !CHAT) { res.status(500).json({ ok: false, error: 'server not configured' }); return; }
+  // ADMIN_CHAT_ID может содержать несколько получателей через запятую (Иван, Маша…)
+  const CHATS = String(process.env.ADMIN_CHAT_ID || '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (!process.env.BOT_TOKEN || !CHATS.length) { res.status(500).json({ ok: false, error: 'server not configured' }); return; }
 
   let b = req.body;
   if (typeof b === 'string') { try { b = JSON.parse(b); } catch { b = {}; } }
@@ -56,11 +57,15 @@ module.exports = async (req, res) => {
     text = lines.join('\n');
   }
 
-  try {
-    const r = await tg('sendMessage', { chat_id: CHAT, text, parse_mode: 'HTML', disable_web_page_preview: true });
-    if (!r.ok) throw new Error(r.description || 'telegram error');
-    res.status(200).json({ ok: true });
-  } catch (e) {
-    res.status(502).json({ ok: false, error: String(e.message || e) });
+  // Рассылаем заявку каждому получателю. Успех, если дошло хотя бы одному
+  // (если кто-то ещё не нажал «Старт» у бота — его пропускаем, остальным уходит).
+  let sentOk = false; let lastErr = '';
+  for (const chat of CHATS) {
+    try {
+      const r = await tg('sendMessage', { chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true });
+      if (r.ok) sentOk = true; else lastErr = r.description || 'telegram error';
+    } catch (e) { lastErr = String(e.message || e); }
   }
+  if (sentOk) res.status(200).json({ ok: true });
+  else res.status(502).json({ ok: false, error: lastErr });
 };
