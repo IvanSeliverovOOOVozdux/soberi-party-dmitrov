@@ -1,6 +1,8 @@
-// Приём заявок с сайта → Telegram Марии. Для групповых занятий уменьшает число свободных мест.
-// Env: BOT_TOKEN, ADMIN_CHAT_ID, (опц.) хранилище Redis для учёта мест.
+// Приём заявок с сайта → сохраняем в хранилище + шлём уведомление Марии.
+// group → добавляем человека в занятие (место списывается); individual → в список индивидуальных.
 const { getJSON, setJSON, tg, esc, hasRedis } = require('../lib/core');
+
+const newId = (p) => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') { res.status(405).json({ ok: false, error: 'method not allowed' }); return; }
@@ -27,17 +29,25 @@ module.exports = async (req, res) => {
         const i = slots.findIndex((s) => s.id === b.slotId);
         if (i === -1) { res.status(409).json({ ok: false, error: 'slot not found' }); return; }
         const s = slots[i];
-        if ((s.taken || 0) >= s.seats) { res.status(409).json({ ok: false, error: 'full' }); return; }
-        s.taken = (s.taken || 0) + 1;
+        const bookings = Array.isArray(s.bookings) ? s.bookings : [];
+        if (bookings.length >= s.seats) { res.status(409).json({ ok: false, error: 'full' }); return; }
+        bookings.push({ id: newId('b'), name, contact, ts: Date.now() });
+        s.bookings = bookings;
         slots[i] = s;
         await setJSON('slots', slots);
         label = s.format + ' · ' + s.date + ' ' + s.time;
-        const left = Math.max(0, s.seats - s.taken);
-        tail = '\n🎟 Осталось мест: <b>' + left + '</b> из ' + s.seats;
-      } catch (e) { /* не вышло обновить места — всё равно уведомим */ }
+        tail = '\n🎟 Осталось мест: <b>' + Math.max(0, s.seats - bookings.length) + '</b> из ' + s.seats;
+      } catch (e) { /* не вышло сохранить — всё равно уведомим */ }
     }
     text = '🟣 <b>Запись в группу</b>\n📅 ' + esc(label) + '\n👤 <b>' + esc(name) + '</b>\n📞 ' + esc(contact) + tail;
   } else {
+    if (hasRedis()) {
+      try {
+        const list = await getJSON('individuals', []);
+        list.push({ id: newId('i'), name, contact, format: b.format || '', date: b.date || '', size: b.size || '', note: b.note || '', ts: Date.now() });
+        await setJSON('individuals', list);
+      } catch (e) { /* уведомление всё равно отправим */ }
+    }
     const lines = ['🟢 <b>Индивидуальная заявка</b>', '👤 <b>' + esc(name) + '</b>', '📞 ' + esc(contact)];
     if (b.format && b.format !== 'Пока не выбрала') lines.push('🎨 ' + esc(b.format));
     if (b.date) lines.push('📅 ' + esc(b.date));
