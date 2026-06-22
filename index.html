@@ -660,6 +660,16 @@
       .formats-head { text-align: center; align-items: center; }
       .formats-title { max-width: none; }
 
+      /* Форматы (моб.): убрать линию-наведение сверху и «прилипающий» hover-подъём при тапе */
+      .fmt::before { display: none; }
+      .fmt:hover { transform: none; box-shadow: none; border-color: var(--line); background: rgba(255,255,255,.5); }
+
+      /* Форматы (моб.): карточки «раскладываются» поочерёдно слева/справа с лёгким наклоном */
+      .fmt { transition-duration: .8s; }
+      .fmt-grid .fmt:nth-child(odd).rv  { opacity: 0; transform: translate(-30px, 14px) rotate(-3deg) scale(.96); }
+      .fmt-grid .fmt:nth-child(even).rv { opacity: 0; transform: translate(30px, 14px) rotate(3deg) scale(.96); }
+      .fmt-grid .fmt.rv.on { opacity: 1; transform: none; }
+
       .formats .card { opacity: 1; }          /* каскад anime.js на мобилке выключен */
       .rail { padding: 0; }
       .rail-track {
