@@ -582,7 +582,8 @@
     .form-note { font-size: .68rem; color: var(--taupe); letter-spacing: .02em; }
 
     /* ── Booking: вкладки + расписание групп ── */
-    .booking-panel { background: var(--milk); border: 1px solid var(--line); border-radius: 28px; padding: 1.5rem; align-self: start; }
+    .booking-panel { background: var(--milk); border: 1px solid var(--line); border-radius: 28px; padding: 1.5rem; align-self: start; transition: height .35s cubic-bezier(.16,1,.3,1); }
+    .booking-panel.bk-animating { overflow: hidden; }
     @media (min-width: 860px) { .booking-panel { padding: 1.75rem; } }
     .bk-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; padding: .3rem; background: var(--blush); border-radius: 999px; }
     .bk-tab { height: 2.75rem; border: none; border-radius: 999px; background: transparent; cursor: pointer; font-size: .82rem; letter-spacing: .03em; color: rgba(58,46,42,.62); transition: background .25s, color .25s, box-shadow .25s; }
@@ -1316,12 +1317,35 @@
     const panel = document.querySelector('.booking-panel');
     if (!panel) return;
 
-    // переключение вкладок «По расписанию» / «Индивидуально»
+    // плавно анимируем высоту панели вокруг любой смены содержимого (чтобы блок не дёргался)
+    const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function animateHeight(mutate) {
+      if (reduceMotion) { mutate(); return; }
+      const start = panel.offsetHeight;
+      mutate();
+      const end = panel.offsetHeight;
+      if (start === end) return;
+      panel.classList.add('bk-animating');
+      panel.style.height = start + 'px';
+      panel.getBoundingClientRect();                 // принудительный reflow
+      requestAnimationFrame(() => { panel.style.height = end + 'px'; });
+      const done = (e) => {
+        if (e.target !== panel || e.propertyName !== 'height') return;
+        panel.style.height = ''; panel.classList.remove('bk-animating');
+        panel.removeEventListener('transitionend', done);
+      };
+      panel.addEventListener('transitionend', done);
+    }
+
+    // переключение вкладок «По расписанию» / «Индивидуально» — с плавной высотой
     const tabs  = panel.querySelectorAll('.bk-tab');
     const panes = panel.querySelectorAll('.bk-pane');
     tabs.forEach(t => t.addEventListener('click', () => {
-      tabs.forEach(x => x.classList.toggle('is-active', x === t));
-      panes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === t.dataset.tab));
+      if (t.classList.contains('is-active')) return;
+      animateHeight(() => {
+        tabs.forEach(x => x.classList.toggle('is-active', x === t));
+        panes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === t.dataset.tab));
+      });
     }));
 
     // Реальное расписание приходит с /api/schedule (бот Маши). Пока пусто → показываем «скоро».
@@ -1361,10 +1385,9 @@
       picked = s;
       const d = fmtDate(s.date);
       pickEl.textContent = s.format + ' · ' + d.d + ' ' + d.m + ' · ' + s.time;
-      bookForm.hidden = false;
-      bookForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      animateHeight(() => { bookForm.hidden = false; });
     }
-    panel.querySelector('.bk-book-x').addEventListener('click', () => { bookForm.hidden = true; picked = null; });
+    panel.querySelector('.bk-book-x').addEventListener('click', () => { animateHeight(() => { bookForm.hidden = true; }); picked = null; });
 
     render(SAMPLE);
     // когда бот будет готов — реальное расписание подменит образец автоматически
@@ -1372,10 +1395,12 @@
 
     // ── отправка заявок (group + individual) ──
     function showMsg(form, ok, html) {
-      let m = form.querySelector('.bk-msg');
-      if (!m) { m = document.createElement('div'); m.className = 'bk-msg'; form.appendChild(m); }
-      m.className = 'bk-msg ' + (ok ? 'ok' : 'err');
-      m.innerHTML = html;
+      animateHeight(() => {
+        let m = form.querySelector('.bk-msg');
+        if (!m) { m = document.createElement('div'); m.className = 'bk-msg'; form.appendChild(m); }
+        m.className = 'bk-msg ' + (ok ? 'ok' : 'err');
+        m.innerHTML = html;
+      });
     }
     async function send(payload, form, btn) {
       const label = btn.textContent;
