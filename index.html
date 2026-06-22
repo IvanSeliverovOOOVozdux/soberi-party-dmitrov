@@ -2017,23 +2017,35 @@
       if (swapping || target === curClass) return;
       dir = dir || (target > curClass ? 1 : -1);
       swapping = true; autoStop();
-      // старая стопка + текст уезжают
-      stack.style.transition = 'opacity .3s ease, transform .35s cubic-bezier(.5,0,.75,.2)';
+
+      // заранее греем новый МК и главное фото — чтобы при показе не было белого кадра
+      const d = DATA[target];
+      preloadClassImgs(target);
+      const mainImg = new Image(); mainImg.src = 'photo/mk/' + d.slug + '/' + d.imgs[0] + '.webp';
+
+      // старая стопка + текст плавно уходят
+      stack.style.transition = 'opacity .28s ease, transform .35s cubic-bezier(.5,0,.75,.2)';
       stack.style.opacity = '0';
-      stack.style.transform = mobile ? 'translateY(16px) scale(.94)' : 'translateX(' + (dir * -55) + 'px)';
-      info.style.transition = 'opacity .3s ease'; info.style.opacity = '0';
-      setTimeout(() => {
+      stack.style.transform = mobile ? 'translateY(14px) scale(.95)' : 'translateX(' + (dir * -55) + 'px)';
+      info.style.transition = 'opacity .28s ease'; info.style.opacity = '0';
+
+      // меняем содержимое только когда: (а) старое затухло и (б) главное фото готово.
+      // это убирает наложение текста и белые полароиды. Страховка — не ждать дольше 0.7с.
+      const imgReady = mainImg.decode ? mainImg.decode().catch(() => {}) : Promise.resolve();
+      const faded    = new Promise((r) => setTimeout(r, 300));
+      const cap      = new Promise((r) => setTimeout(r, 700));
+      Promise.race([Promise.all([imgReady, faded]), cap]).then(() => {
         curClass = target; updateInfo(); buildDeck(); preloadAround(curClass);
-        // новая стопка появляется с другой стороны
         stack.style.transition = 'none';
-        stack.style.transform = mobile ? 'translateY(16px) scale(.94)' : 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
-        requestAnimationFrame(() => {
-          stack.style.transition = 'opacity .4s ease, transform .55s cubic-bezier(.16,1,.3,1)';
+        stack.style.transform = mobile ? 'translateY(14px) scale(.95)' : 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
+        // двойной rAF: сначала применяем стартовую позицию, потом анимируем — без рывка
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+          stack.style.transition = 'opacity .42s ease, transform .55s cubic-bezier(.16,1,.3,1)';
           stack.style.transform = mobile ? 'none' : 'translateX(0)'; stack.style.opacity = '1';
           info.style.transition = 'opacity .45s ease'; info.style.opacity = '1';
           swapping = false; autoPlay();
-        });
-      }, 310);
+        }));
+      });
     }
 
     function autoStop() { if (autoT) { clearInterval(autoT); autoT = null; } }
