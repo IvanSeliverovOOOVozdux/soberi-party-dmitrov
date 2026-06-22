@@ -2076,15 +2076,15 @@
     reel.addEventListener('mouseenter', autoStop);
     reel.addEventListener('mouseleave', autoPlay);
 
+    let preStarted = false;
+    const startPreload = () => { if (preStarted) return; preStarted = true; preloadAround(curClass); };  // грузим фото только когда блок рядом — не мешаем старту страницы
     if ('IntersectionObserver' in window) {
       new IntersectionObserver((es) => {
-        es.forEach(e => { visible = e.isIntersecting; visible ? autoPlay() : autoStop(); });
-      }, { threshold: 0.2 }).observe(reel);
-    } else { visible = true; }
+        es.forEach(e => { visible = e.isIntersecting; visible ? autoPlay() : autoStop(); if (visible) startPreload(); });
+      }, { rootMargin: '300px 0px', threshold: 0.2 }).observe(reel);
+    } else { visible = true; startPreload(); }
 
-    updateInfo(); buildDeck(); preloadAround(curClass);
-    // главные фото всех мастер-классов — в простое, чтобы переход по точкам тоже был мгновенным
-    (window.requestIdleCallback || ((f) => setTimeout(f, 1200)))(() => DATA.forEach((d) => preloadUrl('photo/mk/' + d.slug + '/' + d.imgs[0] + '.webp')));
+    updateInfo(); buildDeck();
   })();
 </script></body>
 </html>
