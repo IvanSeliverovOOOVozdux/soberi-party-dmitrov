@@ -1182,8 +1182,8 @@
             <input id="f-contact" name="contact" type="text" placeholder="+7 ... или @username" required>
           </div>
           <div class="field">
-            <label class="field-label" for="f-format">Формат</label>
-            <select id="f-format" name="format">
+            <label class="field-label" for="f-format">Формат<span class="req"> *</span></label>
+            <select id="f-format" name="format" required>
               <option value="" disabled selected>Выберите формат</option>
               <option>Керамика</option>
               <option>Fluid Art (Bearbrick)</option>
@@ -1196,17 +1196,17 @@
           </div>
           <div class="field-row">
             <div class="field">
-              <label class="field-label" for="f-date">Желаемая дата</label>
-              <input id="f-date" name="date" type="date">
+              <label class="field-label" for="f-date">Желаемая дата<span class="req"> *</span></label>
+              <input id="f-date" name="date" type="date" required>
             </div>
             <div class="field">
-              <label class="field-label" for="f-size">Сколько человек</label>
-              <input id="f-size" name="size" type="number" placeholder="1–12">
+              <label class="field-label" for="f-size">Сколько человек<span class="req"> *</span></label>
+              <input id="f-size" name="size" type="number" placeholder="1–12" min="1" required>
             </div>
           </div>
           <div class="field">
-            <label class="field-label" for="f-note">Комментарий</label>
-            <input id="f-note" name="note" type="text" placeholder="Повод, пожелания, музыка">
+            <label class="field-label" for="f-note">Комментарий<span class="req"> *</span></label>
+            <input id="f-note" name="note" type="text" placeholder="Повод, пожелания, музыка" required>
           </div>
           <button type="submit" class="form-submit">Отправить заявку</button>
           <p class="form-note">Нажимая «Отправить», вы соглашаетесь с обработкой персональных данных.</p>
@@ -1349,7 +1349,7 @@
           '<div class="bk-date"><span class="d">' + d.d + '</span><span class="m">' + d.m + '</span></div>' +
           '<div class="bk-meta"><div class="t">' + s.format + ' · ' + s.time + '</div>' +
           '<div class="s">' + (full ? 'мест нет' : 'осталось ' + left + ' из ' + s.seats + ' мест') + '</div></div>' +
-          '<button class="bk-go" type="button"' + (full ? ' disabled' : '') + '>' + (full ? 'Мест нет' : 'Записаться') + '</button>';
+          '<button class="bk-go" type="button"' + (full ? ' disabled' : '') + '>' + (full ? 'Мест нет' : 'Выбрать') + '</button>';
         if (!full) row.querySelector('.bk-go').addEventListener('click', () => pick(s));
         slotsEl.appendChild(row);
       });
