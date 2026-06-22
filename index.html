@@ -893,6 +893,16 @@
       .mk-pola img { height: auto; }
       .mk-info { align-items: flex-start; }
     }
+    /* Мастер-классы (моб.): текст аккуратно по центру и компактнее, фото не теснит */
+    @media (max-width: 640px) {
+      .mk-stage { margin-bottom: .5rem; }
+      .mk-info { align-items: center; text-align: center; }
+      .mk-cat { font-size: .78rem; letter-spacing: .2em; }
+      .mk-name { font-size: clamp(1.65rem, 7vw, 2.15rem); margin: .55rem 0 1rem; }
+      .mk-price { margin-bottom: 1.2rem; }
+      .mk-price.chip { font-size: .9rem; padding: .45rem 1rem; }
+      .mk-desc { font-size: 1.02rem; line-height: 1.55; max-width: 32ch; opacity: .85; }
+    }
     @media (prefers-reduced-motion: reduce) {
       .mk-pola { transition: none !important; }
     }
@@ -1907,13 +1917,22 @@
     const info  = reel.querySelector('.mk-info');
     const dots  = Array.from(reel.querySelectorAll('.mk-dot'));
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const mobile = matchMedia('(max-width: 640px)').matches;   // на телефоне — мягче и компактнее
+    const canHover = matchMedia('(hover: hover)').matches;     // веер по наведению только там, где есть мышь
     const pad2  = (n) => String(n + 1).padStart(2, '0');
     const esc   = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;');
 
     const LAYERS = 4;
-    const ROT = [-3, 2.4, -2, 3], TY = [0, 9, 18, 27], TX = [0, 5, -4, 6], SC = [1, .965, .93, .9], OP = [1, 1, 1, 0];
-    // доп. смещения при наведении — стопка «раздвигается» как веер карт
+    // на телефоне стопка компактнее — соседние полароиды торчат меньше, не тесно
+    const ROT = mobile ? [-2, 1.6, -1.4, 2] : [-3, 2.4, -2, 3];
+    const TY  = mobile ? [0, 6, 12, 18] : [0, 9, 18, 27];
+    const TX  = mobile ? [0, 3, -2, 4] : [0, 5, -4, 6];
+    const SC  = [1, .965, .93, .9], OP = [1, 1, 1, 0];
+    // доп. смещения при наведении — стопка «раздвигается» как веер карт (только мышь)
     const HX = [-5, 22, 38, 50], HY = [-6, -3, 1, 5], HR = [-1.5, 4, -5, 7];
+    // бросок верхней карты при автосмене — на телефоне короче, чтобы не «вылетала» далеко
+    const THROW_T = mobile ? 'translateY(-92px) translateX(-26px) rotate(-15deg) scale(1.03)'
+                           : 'translateY(-135px) translateX(-46px) rotate(-21deg) scale(1.05)';
     const EASE  = 'transform .62s cubic-bezier(.22,1,.36,1), opacity .55s, box-shadow .5s ease';
     const THROW = 'transform .62s cubic-bezier(.5,0,.75,.2), opacity .5s, box-shadow .5s ease';
 
@@ -1952,7 +1971,7 @@
       if (deckAnim || imgs().length < 2) return; deckAnim = true;
       const leaving = deckOrder[0];
       leaving.style.transition = THROW;
-      leaving.style.transform = 'translateY(-135px) translateX(-46px) rotate(-21deg) scale(1.05)';
+      leaving.style.transform = THROW_T;
       leaving.style.opacity = '0'; leaving.style.zIndex = 200;
       deckOrder = deckOrder.slice(1).concat(leaving);
       for (let i = 0; i < deckOrder.length - 1; i++) { deckOrder[i].style.transition = EASE; setPos(deckOrder[i], i); }
@@ -1969,7 +1988,7 @@
       deckHead = (deckHead - 1 + imgs().length) % imgs().length;
       back.querySelector('img').src = path(imgAt(0));
       back.style.transition = 'none';
-      back.style.transform = 'translateY(-135px) translateX(-46px) rotate(-21deg) scale(1.05)';
+      back.style.transform = THROW_T;
       back.style.opacity = '0'; back.style.zIndex = 200;
       deckOrder = [back].concat(deckOrder.slice(0, deckOrder.length - 1));
       requestAnimationFrame(() => {
@@ -1992,16 +2011,17 @@
       swapping = true; autoStop();
       // старая стопка + текст уезжают
       stack.style.transition = 'opacity .3s ease, transform .35s cubic-bezier(.5,0,.75,.2)';
-      stack.style.opacity = '0'; stack.style.transform = 'translateX(' + (dir * -55) + 'px)';
+      stack.style.opacity = '0';
+      stack.style.transform = mobile ? 'translateY(16px) scale(.94)' : 'translateX(' + (dir * -55) + 'px)';
       info.style.transition = 'opacity .3s ease'; info.style.opacity = '0';
       setTimeout(() => {
         curClass = target; updateInfo(); buildDeck();
         // новая стопка появляется с другой стороны
         stack.style.transition = 'none';
-        stack.style.transform = 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
+        stack.style.transform = mobile ? 'translateY(16px) scale(.94)' : 'translateX(' + (dir * 55) + 'px)'; stack.style.opacity = '0';
         requestAnimationFrame(() => {
           stack.style.transition = 'opacity .4s ease, transform .55s cubic-bezier(.16,1,.3,1)';
-          stack.style.transform = 'translateX(0)'; stack.style.opacity = '1';
+          stack.style.transform = mobile ? 'none' : 'translateX(0)'; stack.style.opacity = '1';
           info.style.transition = 'opacity .45s ease'; info.style.opacity = '1';
           swapping = false; autoPlay();
         });
@@ -2015,9 +2035,11 @@
     reel.querySelectorAll('.mk-arrow').forEach(b => b.addEventListener('click', () => { const dir = Number(b.dataset.cdir); goClass(curClass + dir, dir); }));
     dots.forEach((d, k) => d.addEventListener('click', () => goClass(k, k > curClass ? 1 : -1)));
 
-    // веер при наведении
-    stack.addEventListener('mouseenter', () => { hovered = true; applyHover(); });
-    stack.addEventListener('mouseleave', () => { hovered = false; applyHover(); });
+    // веер при наведении — только при наличии мыши (на тач-экране не «залипает» раскрытым)
+    if (canHover) {
+      stack.addEventListener('mouseenter', () => { hovered = true; applyHover(); });
+      stack.addEventListener('mouseleave', () => { hovered = false; applyHover(); });
+    }
 
     // листание фото: клик / свайп по стопке
     stack.addEventListener('click', () => deckNext());
