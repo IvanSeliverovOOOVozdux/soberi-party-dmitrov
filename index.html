@@ -902,6 +902,8 @@
       .mk-price { margin-bottom: 1.2rem; }
       .mk-price.chip { font-size: .9rem; padding: .45rem 1rem; }
       .mk-desc { font-size: 1.02rem; line-height: 1.55; max-width: 32ch; opacity: .85; }
+      .mk-controls .mk-arrow { display: none; }   /* на телефоне листаем свайпом — стрелки не нужны */
+      .mk-stack { touch-action: pan-y; }          /* горизонтальный свайп — наш, вертикальный скроллит страницу */
     }
     @media (prefers-reduced-motion: reduce) {
       .mk-pola { transition: none !important; }
@@ -2041,12 +2043,21 @@
       stack.addEventListener('mouseleave', () => { hovered = false; applyHover(); });
     }
 
-    // листание фото: клик / свайп по стопке
-    stack.addEventListener('click', () => deckNext());
-    let x0 = null, drag = false;
-    stack.addEventListener('pointerdown', (e) => { x0 = e.clientX; drag = true; });
+    // Жесты по стопке:
+    //  • тап — следующее фото внутри мастер-класса
+    //  • свайп влево/вправо — на телефоне переключает мастер-класс, на десктопе листает фото
+    let x0 = null, drag = false, moved = false;
+    stack.addEventListener('click', () => { if (moved) { moved = false; return; } deckNext(); });
+    stack.addEventListener('pointerdown', (e) => { x0 = e.clientX; drag = true; moved = false; });
     stack.addEventListener('pointerup', (e) => {
-      if (drag && x0 !== null) { const dx = e.clientX - x0; if (Math.abs(dx) > 45) { dx < 0 ? deckNext() : deckPrev(); } }
+      if (drag && x0 !== null) {
+        const dx = e.clientX - x0;
+        if (Math.abs(dx) > 45) {
+          moved = true;
+          if (mobile) { dx < 0 ? goClass(curClass + 1, 1) : goClass(curClass - 1, -1); }
+          else { dx < 0 ? deckNext() : deckPrev(); }
+        }
+      }
       drag = false; x0 = null;
     });
     stack.addEventListener('pointercancel', () => { drag = false; x0 = null; });
