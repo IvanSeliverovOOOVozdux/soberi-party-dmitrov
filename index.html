@@ -26,6 +26,11 @@
       --taupe:   #8a7a72;
       --line:    #efe1d8;
 
+      /* три базовых цвета фона сайта — комбинируем по секциям */
+      --bg-sand:  #ECDCC4;   /* тёплый песочный */
+      --bg-pink:  #F8DBE3;   /* мягкий розовый */
+      --bg-cream: #FBF5EF;   /* кремовый, почти белый */
+
       --serif:   'Fraunces', Georgia, serif;
       --sans:    'Geist', ui-sans-serif, system-ui, sans-serif;
       --max:     1440px;
@@ -277,7 +282,7 @@
     /* ── Formats ───────────────────────────────── */
     .formats {
       padding: clamp(3rem, 5vw, 4.5rem) 0 clamp(3rem, 5vw, 4.5rem);
-      background: var(--blush);
+      background: var(--petal);
       min-height: 100vh;
       display: flex; flex-direction: column; justify-content: center;
     }
@@ -576,6 +581,40 @@
     .form-submit:active { transform: translateY(1px); }
     .form-note { font-size: .68rem; color: var(--taupe); letter-spacing: .02em; }
 
+    /* ── Booking: вкладки + расписание групп ── */
+    .booking-panel { background: var(--milk); border: 1px solid var(--line); border-radius: 28px; padding: 1.5rem; align-self: start; }
+    @media (min-width: 860px) { .booking-panel { padding: 1.75rem; } }
+    .bk-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: .3rem; padding: .3rem; background: var(--blush); border-radius: 999px; }
+    .bk-tab { height: 2.75rem; border: none; border-radius: 999px; background: transparent; cursor: pointer; font-size: .82rem; letter-spacing: .03em; color: rgba(58,46,42,.62); transition: background .25s, color .25s, box-shadow .25s; }
+    .bk-tab.is-active { background: var(--milk); color: var(--cocoa); box-shadow: 0 4px 12px -6px rgba(58,46,42,.32); }
+    .bk-pane { display: none; margin-top: 1.5rem; }
+    .bk-pane.is-active { display: block; }
+    .bk-pane .form { padding: 0; border: none; background: transparent; border-radius: 0; }
+
+    .bk-slots { display: flex; flex-direction: column; gap: .7rem; }
+    .bk-slot { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 1rem; padding: .95rem 1.1rem; border: 1px solid var(--line); border-radius: 18px; background: var(--milk); transition: border-color .2s, transform .2s, box-shadow .2s; }
+    .bk-slot:not(.is-full):hover { border-color: var(--pink); transform: translateY(-2px); box-shadow: 0 10px 24px -16px rgba(58,46,42,.4); }
+    .bk-date { text-align: center; min-width: 2.9rem; }
+    .bk-date .d { font-family: var(--serif); font-size: 1.5rem; line-height: 1; color: var(--cocoa); }
+    .bk-date .m { display: block; font-size: .6rem; letter-spacing: .14em; text-transform: uppercase; color: var(--taupe); margin-top: .2rem; }
+    .bk-meta .t { font-weight: 500; color: var(--cocoa); font-size: .95rem; }
+    .bk-meta .s { font-size: .78rem; color: var(--rose); margin-top: .15rem; }
+    .bk-slot.is-full .bk-meta .s { color: var(--taupe); }
+    .bk-go { height: 2.5rem; padding: 0 1.05rem; border-radius: 999px; border: none; background: var(--cocoa); color: var(--milk); font-size: .76rem; letter-spacing: .03em; cursor: pointer; transition: background .25s; white-space: nowrap; }
+    .bk-go:hover { background: var(--mauve); }
+    .bk-slot.is-full { opacity: .6; }
+    .bk-slot.is-full .bk-go { background: var(--taupe); cursor: not-allowed; }
+
+    .bk-empty { font-size: .9rem; color: var(--taupe); line-height: 1.5; text-align: center; padding: 1.5rem .5rem; }
+    .bk-book { margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 1rem; }
+    .bk-book-head { font-size: .85rem; color: var(--cocoa); display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+    .bk-book-head strong { color: var(--rose); font-weight: 600; }
+    .bk-book-x { background: none; border: none; color: var(--taupe); text-decoration: underline; cursor: pointer; font-size: .78rem; flex: none; }
+    .bk-msg { margin-top: 1rem; padding: 1rem 1.15rem; border-radius: 16px; font-size: .86rem; line-height: 1.5; }
+    .bk-msg.ok  { background: rgba(244,168,199,.2); color: var(--mauve); }
+    .bk-msg.err { background: rgba(138,122,114,.12); color: var(--cocoa); }
+    .bk-msg a { color: var(--rose); text-decoration: underline; }
+
     /* ── Footer ────────────────────────────────── */
     .footer { background: var(--cocoa); color: rgba(251,246,242,.9); padding: clamp(4rem, 6vw, 5rem) 0; }
     .footer-grid { display: grid; grid-template-columns: 1fr; gap: 2.5rem; }
@@ -731,7 +770,7 @@
       .booking-intro { display: contents; }              /* раскрываем вступление в общий столбик */
       .booking-title, .booking-lead { margin-top: 0; }
       .booking-lead { max-width: 46ch; }
-      .booking .form { order: 1; width: 100%; text-align: left; margin-top: .5rem; }  /* форма выше контактов; поля остаются слева */
+      .booking-panel { order: 1; width: 100%; text-align: left; margin-top: .5rem; }  /* панель записи выше контактов; поля остаются слева */
       .booking-contacts { order: 2; margin-top: 1rem; align-items: center; }          /* контакты — под форму, по центру */
       .booking-contacts li { justify-content: center; }
     }
@@ -774,7 +813,7 @@
     .mk {
       position: relative; overflow: hidden;
       padding: clamp(1.75rem, 3.5vw, 2.75rem) 0 clamp(2.25rem, 4vw, 3.25rem);
-      background: linear-gradient(180deg, #fde2d0 0%, #fbd2b8 100%);
+      background: var(--milk);
       min-height: 100vh; display: flex; flex-direction: column; justify-content: center;
     }
     .mk-head { text-align: center; }
@@ -788,22 +827,22 @@
     @media (min-width: 880px) {
       .mk-layout { grid-template-columns: 1.02fr .98fr; gap: clamp(2.5rem, 5.5vw, 5rem); }
       /* текст занимает ту же высоту, что и фото */
-      .mk-info { min-height: 540px; }
+      .mk-info { min-height: 600px; }
     }
 
     .mk-stage { display: flex; flex-direction: column; align-items: center; }
-    .mk-stack { position: relative; width: min(100%, 460px); height: 540px; margin: 0 auto; perspective: 1300px; cursor: pointer;
+    .mk-stack { position: relative; width: min(100%, 470px); height: 632px; margin: 0 auto; perspective: 1300px; cursor: pointer;
       transition: opacity .35s ease, transform .5s cubic-bezier(.16,1,.3,1); }
     .mk-pola {
       position: absolute; left: 0; right: 0; top: 6px;
-      background: #fff; padding: 16px 16px 56px; border-radius: 6px;
+      background: #fff; padding: 16px 16px 18px; border-radius: 6px;
       box-shadow: 0 6px 14px -8px rgba(58,46,42,.25), 0 30px 54px -28px rgba(58,46,42,.45);
       will-change: transform, opacity; transform-origin: center bottom; overflow: hidden; user-select: none;
       transition: box-shadow .5s ease;
     }
-    .mk-pola img { width: 100%; height: 400px; object-fit: cover; border-radius: 4px; display: block; background: var(--blush); pointer-events: none; }
+    .mk-pola img { width: 100%; aspect-ratio: 3 / 4; height: auto; object-fit: cover; border-radius: 4px; display: block; background: #fff; pointer-events: none; }
     .mk-pola .mk-hand { position: absolute; left: 0; right: 0; bottom: 18px; text-align: center; font-family: var(--serif); font-style: italic; color: var(--taupe); font-size: 1rem; }
-    .mk-pola .mk-gloss { position: absolute; inset: 16px 16px 56px; border-radius: 4px; pointer-events: none; background: linear-gradient(125deg, rgba(255,255,255,.28), rgba(255,255,255,0) 38%); }
+    .mk-pola .mk-gloss { position: absolute; inset: 16px 16px 18px; border-radius: 4px; pointer-events: none; background: linear-gradient(125deg, rgba(255,255,255,.28), rgba(255,255,255,0) 38%); }
     /* «приподнятая» тень при наведении — намёк, что стопку можно трогать */
     .mk-stack:hover .mk-pola { box-shadow: 0 12px 24px -8px rgba(58,46,42,.32), 0 40px 66px -28px rgba(58,46,42,.5); }
 
@@ -837,8 +876,8 @@
     .mk-dot.is-active { width: 26px; background: var(--rose); }
 
     @media (max-width: 879px) {
-      .mk-stack { width: 100%; max-width: 400px; height: 520px; }
-      .mk-pola img { height: 385px; }
+      .mk-stack { width: 100%; max-width: 400px; height: min(548px, 135vw); }
+      .mk-pola img { height: auto; }
       .mk-info { align-items: flex-start; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -1014,7 +1053,7 @@
     </div>
   </div>
 
-  <script>window.MK_DATA = [{"slug":"ceramics","cat":"Лепка и роспись","name":"Керамика","price":"от 2700 ₽","desc":"Лепим изделие из глины и расписываем его. Готовая работа будет готова через 4 недели.","imgs":["01","02","03","04","05","06","07","08","09","10","11"]},{"slug":"light-art","cat":"Свет и объём","name":"Объёмная картина с подсветкой","price":"3600 ₽","desc":"Создание трендовой объёмной картины с встроенной подсветкой.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"resin-art","cat":"Эпоксидная смола","name":"Картина из смолы","price":"от 2600 ₽","desc":"Картина из смолы с машинкой, флаконом или бутылкой.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"bearbrick","cat":"Fluid Art","name":"Bearbrick · Fluid Art","price":"2500 ₽","desc":"Украшаем фигурку Bearbrick с помощью техники Fluid Art. Красивые переливы красок и неповторимый результат у каждого участника.","imgs":["01","02","03","04","05","06","07","08","09"]},{"slug":"resin-clock","cat":"Эпоксидная смола","name":"Часы из смолы","price":"3500 ₽","desc":"Создайте дизайнерские настенные часы из эпоксидной смолы.","imgs":["01","02","03","04","05","06","07"]},{"slug":"textured","cat":"Живопись","name":"Текстурная картина","price":"2500 ₽","desc":"Интерьерная картина с объёмной фактурой и современным дизайном. Подходит даже для тех, кто никогда не рисовал.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"wine-paint","cat":"Арт-вечер","name":"Рисование вином","price":"1900 ₽","desc":"Необычный мастер-класс по созданию картины с использованием вина вместо красок.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"glasses","cat":"Роспись","name":"Роспись бокалов","price":"от 1700 ₽","desc":"Создайте уникальный бокал с авторским дизайном. После мастер-класса бокалом можно полноценно пользоваться.","imgs":["01","02","03","04","05","06","07"]},{"slug":"affirmation","cat":"Живопись","name":"Картина аффирмация","price":"2000 ₽","desc":"Создание стильной картины с вдохновляющей фразой или важными для вас словами.","imgs":["01","02","03","04","05","06","07"]},{"slug":"macrame","cat":"Плетение","name":"Сумочка макраме","price":"от 2300 ₽","desc":"Вы сплетаете стильную сумочку в технике макраме для телефона, бутылки или большую сумку для повседневной носки.","imgs":["01","02","03","04","05","06"]},{"slug":"apparel","cat":"Роспись","name":"Роспись одежды или шопера","price":"1500 ₽","desc":"Вы можете закастомить новую одежду или шопер, а также обновить старую.","imgs":["01","02","03","04","05","06","07"]},{"slug":"clay-charms","cat":"Аксессуар","name":"Обвес из глины в стиле Pinterest","price":"2200 ₽","desc":"Расписываем готовые бусины и собираем стильный обвес для сумки или телефона.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"hair-clips","cat":"Аксессуар","name":"Именные крабики со стразами","price":"1900 ₽","desc":"Декорируем крабик стразами и создаём яркий аксессуар.","imgs":["01","02","03","04","05","06"]}];</script>
+  <script>window.MK_DATA = [{"slug":"ceramics","cat":"Лепка и роспись","name":"Керамика","price":"от 2700 ₽","desc":"Лепим изделие из глины и расписываем его. Готовая работа будет готова через 4 недели.","imgs":["06","01","02","03","04","05","07","08","09","10","11"]},{"slug":"light-art","cat":"Свет и объём","name":"Объёмная картина с подсветкой","price":"3600 ₽","desc":"Создание трендовой объёмной картины с встроенной подсветкой.","imgs":["03","01","02","04","05","06","07","08"]},{"slug":"resin-art","cat":"Эпоксидная смола","name":"Картина из смолы","price":"от 2600 ₽","desc":"Картина из смолы с машинкой, флаконом или бутылкой.","imgs":["04","05","01","02","03","06","07","08"]},{"slug":"bearbrick","cat":"Fluid Art","name":"Bearbrick · Fluid Art","price":"2500 ₽","desc":"Украшаем фигурку Bearbrick с помощью техники Fluid Art. Красивые переливы красок и неповторимый результат у каждого участника.","imgs":["04","01","02","03","05","06","07","08","09"]},{"slug":"resin-clock","cat":"Эпоксидная смола","name":"Часы из смолы","price":"3500 ₽","desc":"Создайте дизайнерские настенные часы из эпоксидной смолы.","imgs":["06","01","02","03","04","05","07"]},{"slug":"textured","cat":"Живопись","name":"Текстурная картина","price":"2500 ₽","desc":"Интерьерная картина с объёмной фактурой и современным дизайном. Подходит даже для тех, кто никогда не рисовал.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"wine-paint","cat":"Арт-вечер","name":"Рисование вином","price":"1900 ₽","desc":"Необычный мастер-класс по созданию картины с использованием вина вместо красок.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"glasses","cat":"Роспись","name":"Роспись бокалов","price":"от 1700 ₽","desc":"Создайте уникальный бокал с авторским дизайном. После мастер-класса бокалом можно полноценно пользоваться.","imgs":["03","01","02","04","05","06","07"]},{"slug":"affirmation","cat":"Живопись","name":"Картина аффирмация","price":"2000 ₽","desc":"Создание стильной картины с вдохновляющей фразой или важными для вас словами.","imgs":["05","01","02","03","04","06","07"]},{"slug":"macrame","cat":"Плетение","name":"Сумочка макраме","price":"от 2300 ₽","desc":"Вы сплетаете стильную сумочку в технике макраме для телефона, бутылки или большую сумку для повседневной носки.","imgs":["05","01","02","03","04","06"]},{"slug":"apparel","cat":"Роспись","name":"Роспись одежды или шопера","price":"1500 ₽","desc":"Вы можете закастомить новую одежду или шопер, а также обновить старую.","imgs":["03","01","02","04","05","06","07"]},{"slug":"clay-charms","cat":"Аксессуар","name":"Обвес из глины в стиле Pinterest","price":"2200 ₽","desc":"Расписываем готовые бусины и собираем стильный обвес для сумки или телефона.","imgs":["01","02","03","04","05","06","07","08"]},{"slug":"hair-clips","cat":"Аксессуар","name":"Именные крабики со стразами","price":"1900 ₽","desc":"Декорируем крабик стразами и создаём яркий аксессуар.","imgs":["05","01","02","03","04","06"]}];</script>
 </section>
 
 <!-- ── Studio (atmosphere) ─────────────────────── -->
@@ -1098,8 +1137,8 @@
   <div class="wrap">
     <div class="booking-intro">
       <span class="eyebrow">Запись</span>
-      <h2 class="booking-title rv">соберём ваш <em>девичник</em></h2>
-      <p class="booking-lead rv d1">Оставьте заявку — Мария напишет в Telegram или позвонит в течение пары часов, чтобы согласовать дату, формат и количество девушек.</p>
+      <h2 class="booking-title rv">записаться на <em>мастер-класс</em></h2>
+      <p class="booking-lead rv d1">Два пути: прийти на занятие из афиши — в группе и в удобную дату, либо собрать индивидуальный мастер-класс под себя. Мария подтвердит запись в Telegram.</p>
       <ul class="booking-contacts rv d2">
         <li><span class="dot"></span>Дмитров, Профессиональная 4, офис 427</li>
         <li><span class="dot"></span>Telegram: @soberi.party</li>
@@ -1107,44 +1146,73 @@
       </ul>
     </div>
 
-    <form class="form rv d1" action="mailto:seliverovivan0@gmail.com" method="post" enctype="text/plain">
-      <div class="field">
-        <label class="field-label" for="f-name">Имя<span class="req"> *</span></label>
-        <input id="f-name" name="name" type="text" placeholder="Как к вам обращаться" required>
+    <div class="booking-panel rv d1">
+      <div class="bk-tabs" role="tablist" aria-label="Способ записи">
+        <button class="bk-tab is-active" type="button" data-tab="schedule" role="tab">По расписанию</button>
+        <button class="bk-tab" type="button" data-tab="individual" role="tab">Индивидуально</button>
       </div>
-      <div class="field">
-        <label class="field-label" for="f-contact">Телефон или Telegram<span class="req"> *</span></label>
-        <input id="f-contact" name="contact" type="text" placeholder="+7 ... или @username" required>
+
+      <!-- Вкладка: запись в группу из афиши -->
+      <div class="bk-pane is-active" data-pane="schedule">
+        <div class="bk-slots" id="bkSlots"></div>
+        <p class="bk-empty" id="bkEmpty" hidden>Ближайшие занятия скоро появятся — напишите Марии, подберём дату.</p>
+        <form class="bk-book" id="bkGroupForm" hidden novalidate>
+          <div class="bk-book-head"><span>Запись на: <strong id="bkPick"></strong></span><button type="button" class="bk-book-x">изменить</button></div>
+          <div class="field">
+            <label class="field-label" for="g-name">Имя<span class="req"> *</span></label>
+            <input id="g-name" name="name" type="text" placeholder="Как к вам обращаться" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="g-contact">Телефон или Telegram<span class="req"> *</span></label>
+            <input id="g-contact" name="contact" type="text" placeholder="+7 ... или @username" required>
+          </div>
+          <button type="submit" class="form-submit">Записаться в группу</button>
+        </form>
       </div>
-      <div class="field">
-        <label class="field-label" for="f-format">Формат</label>
-        <select id="f-format" name="format">
-          <option value="" disabled selected>Выберите формат</option>
-          <option>Керамический девичник</option>
-          <option>Девичник Fluid Art</option>
-          <option>Светящаяся картина</option>
-          <option>Текстурный девичник</option>
-          <option>Акварельный девичник</option>
-          <option>Пока не выбрала</option>
-        </select>
+
+      <!-- Вкладка: индивидуальный мастер-класс под свою дату -->
+      <div class="bk-pane" data-pane="individual">
+        <form class="form" id="bkIndForm" method="post" novalidate>
+          <div class="field">
+            <label class="field-label" for="f-name">Имя<span class="req"> *</span></label>
+            <input id="f-name" name="name" type="text" placeholder="Как к вам обращаться" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-contact">Телефон или Telegram<span class="req"> *</span></label>
+            <input id="f-contact" name="contact" type="text" placeholder="+7 ... или @username" required>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-format">Формат</label>
+            <select id="f-format" name="format">
+              <option value="" disabled selected>Выберите формат</option>
+              <option>Керамика</option>
+              <option>Fluid Art (Bearbrick)</option>
+              <option>Картина с подсветкой</option>
+              <option>Картина из смолы</option>
+              <option>Текстурная картина</option>
+              <option>Рисование вином</option>
+              <option>Пока не выбрала</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="f-date">Желаемая дата</label>
+              <input id="f-date" name="date" type="date">
+            </div>
+            <div class="field">
+              <label class="field-label" for="f-size">Сколько человек</label>
+              <input id="f-size" name="size" type="number" placeholder="1–12">
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="f-note">Комментарий</label>
+            <input id="f-note" name="note" type="text" placeholder="Повод, пожелания, музыка">
+          </div>
+          <button type="submit" class="form-submit">Отправить заявку</button>
+          <p class="form-note">Нажимая «Отправить», вы соглашаетесь с обработкой персональных данных.</p>
+        </form>
       </div>
-      <div class="field-row">
-        <div class="field">
-          <label class="field-label" for="f-date">Дата</label>
-          <input id="f-date" name="date" type="date">
-        </div>
-        <div class="field">
-          <label class="field-label" for="f-size">Сколько девушек</label>
-          <input id="f-size" name="size" type="number" placeholder="3–12">
-        </div>
-      </div>
-      <div class="field">
-        <label class="field-label" for="f-note">Комментарий</label>
-        <input id="f-note" name="note" type="text" placeholder="Повод, пожелания, музыка">
-      </div>
-      <button type="submit" class="form-submit">Отправить заявку</button>
-      <p class="form-note">Нажимая «Отправить», вы соглашаетесь с обработкой персональных данных.</p>
-    </form>
+    </div>
   </div>
 </section>
 
@@ -1239,6 +1307,107 @@
       });
     }, { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
     els.forEach(el => io.observe(el));
+  })();
+
+  // ── Запись: вкладки + расписание групп + отправка заявок ──
+  (function () {
+    const panel = document.querySelector('.booking-panel');
+    if (!panel) return;
+
+    // переключение вкладок «По расписанию» / «Индивидуально»
+    const tabs  = panel.querySelectorAll('.bk-tab');
+    const panes = panel.querySelectorAll('.bk-pane');
+    tabs.forEach(t => t.addEventListener('click', () => {
+      tabs.forEach(x => x.classList.toggle('is-active', x === t));
+      panes.forEach(p => p.classList.toggle('is-active', p.dataset.pane === t.dataset.tab));
+    }));
+
+    // Реальное расписание приходит с /api/schedule (бот Маши). Пока пусто → показываем «скоро».
+    const SAMPLE = [];
+    const MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+
+    const slotsEl  = panel.querySelector('#bkSlots');
+    const emptyEl  = panel.querySelector('#bkEmpty');
+    const bookForm = panel.querySelector('#bkGroupForm');
+    const pickEl   = panel.querySelector('#bkPick');
+    let picked = null;
+
+    // парсим ISO-дату вручную, без new Date(), чтобы не зависеть от часового пояса
+    const fmtDate = (iso) => { const p = iso.split('-'); return { d: +p[2], m: MONTHS[(+p[1]) - 1] }; };
+
+    function render(list) {
+      slotsEl.innerHTML = '';
+      if (!list || !list.length) { emptyEl.hidden = false; return; }
+      emptyEl.hidden = true;
+      list.forEach(s => {
+        const left = Math.max(0, (s.seats || 0) - (s.taken || 0));
+        const full = left <= 0;
+        const d = fmtDate(s.date);
+        const row = document.createElement('div');
+        row.className = 'bk-slot' + (full ? ' is-full' : '');
+        row.innerHTML =
+          '<div class="bk-date"><span class="d">' + d.d + '</span><span class="m">' + d.m + '</span></div>' +
+          '<div class="bk-meta"><div class="t">' + s.format + ' · ' + s.time + '</div>' +
+          '<div class="s">' + (full ? 'мест нет' : 'осталось ' + left + ' из ' + s.seats + ' мест') + '</div></div>' +
+          '<button class="bk-go" type="button"' + (full ? ' disabled' : '') + '>' + (full ? 'Мест нет' : 'Записаться') + '</button>';
+        if (!full) row.querySelector('.bk-go').addEventListener('click', () => pick(s));
+        slotsEl.appendChild(row);
+      });
+    }
+
+    function pick(s) {
+      picked = s;
+      const d = fmtDate(s.date);
+      pickEl.textContent = s.format + ' · ' + d.d + ' ' + d.m + ' · ' + s.time;
+      bookForm.hidden = false;
+      bookForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+    panel.querySelector('.bk-book-x').addEventListener('click', () => { bookForm.hidden = true; picked = null; });
+
+    render(SAMPLE);
+    // когда бот будет готов — реальное расписание подменит образец автоматически
+    fetch('/api/schedule').then(r => r.ok ? r.json() : null).then(d => { if (Array.isArray(d) && d.length) render(d); }).catch(() => {});
+
+    // ── отправка заявок (group + individual) ──
+    function showMsg(form, ok, html) {
+      let m = form.querySelector('.bk-msg');
+      if (!m) { m = document.createElement('div'); m.className = 'bk-msg'; form.appendChild(m); }
+      m.className = 'bk-msg ' + (ok ? 'ok' : 'err');
+      m.innerHTML = html;
+    }
+    async function send(payload, form, btn) {
+      const label = btn.textContent;
+      btn.disabled = true; btn.textContent = 'Отправляем…';
+      try {
+        const r = await fetch('/api/book', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+        if (!r.ok) throw new Error('bad status');
+        form.reset();
+        showMsg(form, true, 'Заявка отправлена 🌸 Мария свяжется с вами в ближайшее время.');
+        if (form === bookForm) bookForm.hidden = true;
+      } catch (e) {
+        showMsg(form, false, 'Пока не получилось отправить автоматически. Напишите Марии в <a href="https://t.me/soberi_party" target="_blank" rel="noopener">Telegram</a> или позвоните +7&nbsp;964&nbsp;599-93-93.');
+      } finally {
+        btn.disabled = false; btn.textContent = label;
+      }
+    }
+
+    bookForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!picked) return;
+      if (!bookForm.checkValidity()) { bookForm.reportValidity(); return; }
+      const fd = new FormData(bookForm);
+      send({ type: 'group', slotId: picked.id, slot: picked.format + ' · ' + picked.date + ' ' + picked.time, name: fd.get('name'), contact: fd.get('contact') }, bookForm, bookForm.querySelector('button[type="submit"]'));
+    });
+
+    const indForm = panel.querySelector('#bkIndForm');
+    if (indForm) {
+      indForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!indForm.checkValidity()) { indForm.reportValidity(); return; }
+        const fd = new FormData(indForm);
+        send({ type: 'individual', name: fd.get('name'), contact: fd.get('contact'), format: fd.get('format'), date: fd.get('date'), size: fd.get('size'), note: fd.get('note') }, indForm, indForm.querySelector('.form-submit'));
+      });
+    }
   })();
 
   // Trefoil petals across every section: stagger-in, float + scroll parallax
@@ -1728,7 +1897,7 @@
     function newCard(nn) {
       const d = DATA[curClass]; const c = document.createElement('div'); c.className = 'mk-pola';
       c.innerHTML = '<img src="' + path(nn) + '" alt="' + esc(d.name) + ' — работа">' +
-                    '<span class="mk-gloss"></span><span class="mk-hand">' + esc(d.name) + '</span>';
+                    '<span class="mk-gloss"></span>';
       return c;
     }
     function rebuildCards() {

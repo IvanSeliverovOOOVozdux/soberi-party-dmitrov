@@ -21,3 +21,6 @@ photo/studio-2.jpg
 фото для матер классов/
 process-mk.js
 generate-mk.js
+
+# бэкапы оригиналов фото (перед обрезкой)
+*.orig.webp
