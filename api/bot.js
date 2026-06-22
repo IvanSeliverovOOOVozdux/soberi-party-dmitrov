@@ -183,7 +183,8 @@ async function showMenuMsg(chatId, withWelcome) {
 async function onMessage(msg) {
   const chatId = msg.chat.id;
   if (!isAdmin(msg.from && msg.from.id)) {
-    return send(chatId, 'Этот бот — для управления расписанием студии Soberi Party.');
+    const uid = msg.from && msg.from.id;
+    return send(chatId, '🌸 Это бот студии <b>Soberi Party</b> для управления расписанием.\n\nЕсли вы мастер студии и вам нужен доступ — перешлите администратору этот номер:\n<b>' + uid + '</b>');
   }
   const txt = msg.text.trim();
   if (/^\/start/i.test(txt)) { await del('state:' + chatId); return showMenuMsg(chatId, true); }
