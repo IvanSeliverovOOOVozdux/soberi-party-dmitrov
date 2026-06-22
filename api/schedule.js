@@ -1,8 +1,9 @@
 // Отдаёт сайту актуальное расписание групповых занятий (из хранилища, которое ведёт бот).
-const { getJSON, todayMsk } = require('../lib/core');
+const { getJSON, todayMsk, hasRedis } = require('../lib/core');
 
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
+  if (req.query && req.query.check) { res.status(200).json({ redis: hasRedis() }); return; } // диагностика подключения базы
   try {
     const slots = await getJSON('slots', []);
     const today = todayMsk();
