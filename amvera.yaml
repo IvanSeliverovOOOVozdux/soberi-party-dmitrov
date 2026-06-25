@@ -1,0 +1,10 @@
+meta:
+  environment: node
+  toolchain:
+    name: npm
+    version: 20
+  run:
+    # запускаем наш единый сервер (статика сайта + API формы/расписания/бота)
+    scriptName: server.js
+    # порт должен совпадать с тем, что слушает server.js (process.env.PORT || 3000)
+    containerPort: 3000
