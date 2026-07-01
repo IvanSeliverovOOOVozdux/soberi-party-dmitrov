@@ -25,6 +25,10 @@ const slotsGet = () => getJSON('slots', []);
 const slotsSave = (s) => setJSON('slots', s);
 const indGet = () => getJSON('individuals', []);
 const indSave = (l) => setJSON('individuals', l);
+// свои форматы, которые Маша добавляет сама (помимо встроенных FORMATS)
+const cfmtGet = () => getJSON('customFormats', []);
+const cfmtSave = (l) => setJSON('customFormats', l);
+const allFormatsGet = async () => FORMATS.concat(await cfmtGet());
 const upcoming = (slots) => slots.filter((s) => s.date >= todayMsk()).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
 const findSlot = (slots, id) => slots.find((s) => s.id === id);
 
@@ -42,6 +46,7 @@ function vMenu() {
     kb: { inline_keyboard: [
       [btn('📋 Расписание', 'sch:0')],
       [btn('➕ Добавить занятие', 'add')],
+      [btn('🎨 Мои мастер-классы', 'cfmt')],
       [btn('📨 Заявки', 'inb')],
     ] },
   };
@@ -141,15 +146,27 @@ async function vIndividuals(page) {
 }
 
 // клавиатуры мастера/редактирования
-function formatsKb(cb, backData) {
+function formatsKb(list, cb, backData, addCb) {
   const rows = [];
-  for (let i = 0; i < FORMATS.length; i += 2) {
-    const r = [btn(FORMATS[i], cb(i))];
-    if (FORMATS[i + 1]) r.push(btn(FORMATS[i + 1], cb(i + 1)));
+  for (let i = 0; i < list.length; i += 2) {
+    const r = [btn(list[i], cb(i))];
+    if (list[i + 1]) r.push(btn(list[i + 1], cb(i + 1)));
     rows.push(r);
   }
+  if (addCb) rows.push([btn('➕ Свой мастер-класс', addCb)]);
   rows.push(navRow(backData));
   return { inline_keyboard: rows };
+}
+// экран управления своими форматами
+async function vFormats() {
+  const list = await cfmtGet();
+  const rows = list.map((f, i) => [btn(f, 'noop'), btn('❌', 'cfd:' + i)]);
+  rows.push([btn('➕ Добавить мастер-класс', 'cfa')]);
+  rows.push([btn('🏠 Меню', 'menu')]);
+  const head = list.length
+    ? '🎨 <b>Мои мастер-классы</b>\nЭто форматы, которые ты добавила сама — они доступны при создании занятия и показываются на сайте в разделе «По расписанию».\nНажми ❌, чтобы убрать:'
+    : '🎨 <b>Мои мастер-классы</b>\nЗдесь будут форматы, которые ты добавишь сама (помимо встроенных). Пока пусто.\nНажми «Добавить» 👇';
+  return { text: head, kb: { inline_keyboard: rows } };
 }
 function seatsKb(cb, customData, backData) {
   return { inline_keyboard: [
@@ -192,6 +209,7 @@ async function onMessage(msg) {
   if (!hasRedis()) return send(chatId, '⚠️ База расписания ещё не подключена.');
 
   const st = await getJSON('state:' + chatId, null);
+  if (st && st.step === 'newformat') return addNewFormat(chatId, txt, st);
   if (st && st.flow === 'add' && st.step === 'datetime') return addDatetime(chatId, txt, st);
   if (st && st.flow === 'add' && st.step === 'seatscustom') return finalizeAdd(chatId, null, parseInt(txt, 10), st);
   if (st && st.flow === 'editdt') return editDatetime(chatId, txt, st);
@@ -216,6 +234,7 @@ async function onCallback(cq) {
   if (data.startsWith('bk:')) { await ack(); const v = await vBookings(data.slice(3)); return edit(cq, v.text, v.kb); }
   if (data.startsWith('ed:')) { await ack(); const v = await vEdit(data.slice(3)); return edit(cq, v.text, v.kb); }
   if (data.startsWith('del:')) { await ack(); const v = await vDelConfirm(data.slice(4)); return edit(cq, v.text, v.kb); }
+  if (data === 'cfmt') { await ack(); const v = await vFormats(); return edit(cq, v.text, v.kb); }
 
   if (!hasRedis()) { await ack(); return edit(cq, '⚠️ База расписания ещё не подключена.'); }
 
@@ -236,14 +255,31 @@ async function onCallback(cq) {
     await indSave(list); await ack('Удалено'); const v = await vIndividuals(0); return edit(cq, v.text, v.kb);
   }
 
+  // ── свои мастер-классы (форматы) ──
+  if (data === 'cfa') {
+    await setJSON('state:' + chatId, { flow: 'cfmtadd', step: 'newformat', after: 'manage', draft: {} }); await ack();
+    return edit(cq, '✏️ Напиши название нового мастер-класса (например «Свечи из воска»):', { inline_keyboard: [[btn('◀ Отмена', 'cfmt')]] });
+  }
+  if (data.startsWith('cfd:')) {
+    const i = +data.slice(4); const list = await cfmtGet();
+    if (i >= 0 && i < list.length) { list.splice(i, 1); await cfmtSave(list); }
+    await ack('Убрано'); const v = await vFormats(); return edit(cq, v.text, v.kb);
+  }
+
   // ── мастер добавления ──
   if (data === 'add') {
     await setJSON('state:' + chatId, { flow: 'add', step: 'format', draft: {} }); await ack();
-    return edit(cq, 'Шаг 1 из 3. Выбери формат:', formatsKb((i) => 'f' + i, null));
+    const list = await allFormatsGet();
+    return edit(cq, 'Шаг 1 из 3. Выбери формат:', formatsKb(list, (i) => 'f' + i, null, 'addfmt'));
+  }
+  if (data === 'addfmt') {
+    const st = await getJSON('state:' + chatId, { draft: {} }); st.flow = 'add'; st.step = 'newformat'; st.after = 'wizard'; st.draft = st.draft || {};
+    await setJSON('state:' + chatId, st); await ack();
+    return edit(cq, '✏️ Напиши название своего мастер-класса (например «Свечи из воска»):', { inline_keyboard: [navRow('wback')] });
   }
   if (data === 'wback') return wizardBack(cq, chatId, ack);
   if (/^f\d+$/.test(data)) {
-    const fmt = FORMATS[+data.slice(1)]; if (!fmt) return ack();
+    const list = await allFormatsGet(); const fmt = list[+data.slice(1)]; if (!fmt) return ack();
     const st = await getJSON('state:' + chatId, { draft: {} }); st.flow = 'add'; st.step = 'datetime'; st.draft = st.draft || {}; st.draft.format = fmt;
     await setJSON('state:' + chatId, st); await ack();
     return edit(cq, `Формат: <b>${esc(fmt)}</b>\n\nШаг 2 из 3. Напиши дату и время сообщением, например:\n<code>28.06 18:00</code>`, { inline_keyboard: [navRow('wback')] });
@@ -256,9 +292,9 @@ async function onCallback(cq) {
   }
 
   // ── редактирование занятия ──
-  if (data.startsWith('edf:')) { await ack(); const id = data.slice(4); return edit(cq, 'Выбери новый формат:', formatsKb((i) => `efs:${id}:${i}`, 'ed:' + id)); }
+  if (data.startsWith('edf:')) { await ack(); const id = data.slice(4); const list = await allFormatsGet(); return edit(cq, 'Выбери новый формат:', formatsKb(list, (i) => `efs:${id}:${i}`, 'ed:' + id)); }
   if (data.startsWith('efs:')) {
-    const [, id, idx] = data.split(':'); const fmt = FORMATS[+idx]; const slots = await slotsGet(); const s = findSlot(slots, id);
+    const [, id, idx] = data.split(':'); const list = await allFormatsGet(); const fmt = list[+idx]; const slots = await slotsGet(); const s = findSlot(slots, id);
     if (s && fmt) { s.format = fmt; await slotsSave(slots); } await ack('Формат изменён'); const v = await vSlot(id); return edit(cq, v.text, v.kb);
   }
   if (data.startsWith('edt:')) {
@@ -278,10 +314,30 @@ async function onCallback(cq) {
 async function wizardBack(cq, chatId, ack) {
   const st = await getJSON('state:' + chatId, null);
   if (!st) { await ack(); const v = vMenu(); return edit(cq, v.text, v.kb); }
-  if (st.step === 'datetime') { st.step = 'format'; await setJSON('state:' + chatId, st); await ack(); return edit(cq, 'Шаг 1 из 3. Выбери формат:', formatsKb((i) => 'f' + i, null)); }
+  if (st.step === 'datetime' || st.step === 'newformat') {
+    st.step = 'format'; await setJSON('state:' + chatId, st); await ack();
+    const list = await allFormatsGet();
+    return edit(cq, 'Шаг 1 из 3. Выбери формат:', formatsKb(list, (i) => 'f' + i, null, 'addfmt'));
+  }
   // с шага мест — назад к вводу даты
   st.step = 'datetime'; await setJSON('state:' + chatId, st); await ack();
   return edit(cq, `Формат: <b>${esc(st.draft.format)}</b>\n\nШаг 2 из 3. Напиши дату и время, например:\n<code>28.06 18:00</code>`, { inline_keyboard: [navRow('wback')] });
+}
+
+// сохранение своего мастер-класса (название текстом). st.after: 'wizard' — продолжить добавление занятия, 'manage' — вернуться в список.
+async function addNewFormat(chatId, txt, st) {
+  const name = txt.replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (name.length < 2) return send(chatId, 'Слишком коротко. Напиши название мастер-класса ещё раз:');
+  const list = await cfmtGet();
+  const exists = FORMATS.includes(name) || list.includes(name);
+  if (!exists) { list.push(name); await cfmtSave(list); }
+  if (st.after === 'wizard') {
+    st.step = 'datetime'; st.draft = st.draft || {}; st.draft.format = name; await setJSON('state:' + chatId, st);
+    return send(chatId, `✅ Мастер-класс «<b>${esc(name)}</b>» ${exists ? 'уже был в списке' : 'добавлен'} и выбран.\n\nШаг 2 из 3. Напиши дату и время, например:\n<code>28.06 18:00</code>`, { inline_keyboard: [navRow('wback')] });
+  }
+  await del('state:' + chatId);
+  const v = await vFormats();
+  return send(chatId, `✅ Мастер-класс «<b>${esc(name)}</b>» ${exists ? 'уже был в списке' : 'добавлен'}.\n\n` + v.text, v.kb);
 }
 
 function parseDateTime(txt) {
